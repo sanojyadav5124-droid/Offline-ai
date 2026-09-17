@@ -29,8 +29,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   vesselName,
   onDataReloaded,
 }) => {
-  if (!isOpen) return null;
-
   const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
   const handleExport = () => {
@@ -64,6 +62,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">

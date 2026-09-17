@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, CheckCircle2, ShieldCheck, Edit2, Calendar, User } from "lucide-react";
 import { EquipmentKnowledgeItem, CurrentReading } from "../types";
 
@@ -9,13 +9,23 @@ interface UpdateReadingModalProps {
 }
 
 export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({ equipment, onClose, onSave }) => {
-  if (!equipment) return null;
-
-  const [measuredValue, setMeasuredValue] = useState(equipment.currentReading.measuredValue);
+  const [measuredValue, setMeasuredValue] = useState("");
   const [testedDate, setTestedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [testedByRank, setTestedByRank] = useState(equipment.currentReading.testedByRank || "2nd Engineer");
-  const [status, setStatus] = useState<CurrentReading["status"]>(equipment.currentReading.status);
-  const [notes, setNotes] = useState(equipment.currentReading.notes || "");
+  const [testedByRank, setTestedByRank] = useState("2nd Engineer");
+  const [status, setStatus] = useState<CurrentReading["status"]>("Compliant");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (equipment) {
+      setMeasuredValue(equipment.currentReading.measuredValue || "");
+      setTestedDate(equipment.currentReading.lastTestedDate || new Date().toISOString().split("T")[0]);
+      setTestedByRank(equipment.currentReading.testedByRank || "2nd Engineer");
+      setStatus(equipment.currentReading.status || "Compliant");
+      setNotes(equipment.currentReading.notes || "");
+    }
+  }, [equipment]);
+
+  if (!equipment) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

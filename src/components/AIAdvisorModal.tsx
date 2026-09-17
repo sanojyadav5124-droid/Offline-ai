@@ -28,8 +28,6 @@ export const AIAdvisorModal: React.FC<AIAdvisorModalProps> = ({
   equipmentList,
   troubleshootingList,
 }) => {
-  if (!isOpen) return null;
-
   const [query, setQuery] = useState("");
   const [selectedEqId, setSelectedEqId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -178,6 +176,8 @@ Matched against ${equipmentList.length} onboard machinery systems and ${troubles
       }, 150);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150 overflow-y-auto">
