@@ -15,11 +15,21 @@ import {
   ChevronRight,
   Ship,
   Info,
+  StickyNote,
+  Plus,
+  History,
+  AlertOctagon,
+  Scale,
+  ArrowRight,
+  FileCheck2,
+  Filter,
 } from "lucide-react";
 import {
   EquipmentKnowledgeItem,
   TroubleshootingEntry,
   EmergencyChecklist,
+  QuickNote,
+  ChangeLogEntry,
   MaritimeDepartment,
   WatchMode,
   PhotoAttachment,
@@ -30,34 +40,79 @@ interface DashboardViewProps {
   equipment: EquipmentKnowledgeItem[];
   troubleshooting: TroubleshootingEntry[];
   checklists: EmergencyChecklist[];
-  setActiveTab: (tab: ActiveTab) => void;
+  quickNotes: QuickNote[];
+  changeLogs: ChangeLogEntry[];
+  selectedDepartment: MaritimeDepartment | "All";
   setSelectedDepartment: (dept: MaritimeDepartment | "All") => void;
+  setActiveTab: (tab: ActiveTab) => void;
   onOpenAddModal: () => void;
   onOpenAiModal: () => void;
+  onOpenAddEmergencyModal: () => void;
   onSelectPhoto: (photo: PhotoAttachment) => void;
   onSelectEquipment: (id: string) => void;
   onSelectTroubleshooting: (id: string) => void;
+  onAddQuickNote: (note: QuickNote) => void;
+  onConvertToLog: (note: QuickNote) => void;
   watchMode: WatchMode;
+  userRank: string;
 }
+
+const DEPARTMENTS: { id: MaritimeDepartment | "All"; label: string; icon: string; color: string }[] = [
+  { id: "All", label: "All Departments", icon: "🌐", color: "bg-slate-800 text-slate-200" },
+  { id: "Engine", label: "Engine Room", icon: "⚙️", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
+  { id: "Deck", label: "Deck & Bridge", icon: "🧭", color: "bg-blue-500/20 text-blue-700 dark:text-blue-300" },
+  { id: "Electrical", label: "Electrical / ETO", icon: "⚡", color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300" },
+  { id: "Safety_ISM", label: "Safety / ISM", icon: "🛡️", color: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" },
+  { id: "Cargo", label: "Cargo Operations", icon: "📦", color: "bg-purple-500/20 text-purple-700 dark:text-purple-300" },
+];
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   equipment,
   troubleshooting,
   checklists,
-  setActiveTab,
+  quickNotes,
+  changeLogs,
+  selectedDepartment,
   setSelectedDepartment,
+  setActiveTab,
   onOpenAddModal,
   onOpenAiModal,
+  onOpenAddEmergencyModal,
   onSelectPhoto,
   onSelectEquipment,
   onSelectTroubleshooting,
+  onAddQuickNote,
+  onConvertToLog,
   watchMode,
+  userRank,
 }) => {
   const [triageInput, setTriageInput] = useState("");
+  const [fastNoteText, setFastNoteText] = useState("");
+
+  // Department-filtered datasets to prevent clutter for specific watches
+  const filteredEquipment = equipment.filter(
+    (e) => selectedDepartment === "All" || e.department === selectedDepartment
+  );
+
+  const filteredTroubleshooting = troubleshooting.filter(
+    (t) => selectedDepartment === "All" || t.department === selectedDepartment
+  );
+
+  const filteredChecklists = checklists.filter(
+    (c) => selectedDepartment === "All" || c.department === selectedDepartment
+  );
+
+  const filteredNotes = quickNotes.filter(
+    (n) => selectedDepartment === "All" || n.department === selectedDepartment
+  );
+
+  const filteredChangeLogs = changeLogs.filter(
+    (l) => selectedDepartment === "All" || l.department === selectedDepartment
+  );
 
   // Urgent triage filtered items
   const matchedTriage = triageInput.trim()
-    ? troubleshooting.filter(
+    ? filteredTroubleshooting.filter(
         (t) =>
           t.symptomOrAlarm.toLowerCase().includes(triageInput.toLowerCase()) ||
           t.rootCause.toLowerCase().includes(triageInput.toLowerCase()) ||
@@ -67,7 +122,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     : [];
 
   const matchedEquipment = triageInput.trim()
-    ? equipment.filter(
+    ? filteredEquipment.filter(
         (e) =>
           e.equipmentName.toLowerCase().includes(triageInput.toLowerCase()) ||
           e.maker.toLowerCase().includes(triageInput.toLowerCase()) ||
@@ -75,44 +130,90 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )
     : [];
 
-  // Compliance metrics
-  const compliantCount = equipment.filter((e) => e.currentReading.status === "Compliant").length;
-  const cautionCount = equipment.filter((e) => e.currentReading.status === "Caution").length;
-  const nonCompliantCount = equipment.filter((e) => e.currentReading.status === "Non-Compliant").length;
+  // Compliance metrics based on filtered department
+  const compliantCount = filteredEquipment.filter((e) => e.currentReading.status === "Compliant").length;
+  const cautionCount = filteredEquipment.filter((e) => e.currentReading.status === "Caution").length;
+  const nonCompliantCount = filteredEquipment.filter((e) => e.currentReading.status === "Non-Compliant").length;
 
-  const allPhotos: { photo: PhotoAttachment; equipmentName: string }[] = [];
-  equipment.forEach((eq) => {
-    eq.photos.forEach((p) => allPhotos.push({ photo: p, equipmentName: eq.equipmentName }));
-  });
-  troubleshooting.forEach((tr) => {
-    tr.photos.forEach((p) => allPhotos.push({ photo: p, equipmentName: tr.equipmentName }));
-  });
+  const activeNotesCount = filteredNotes.filter((n) => !n.isResolved).length;
 
   const isNight = watchMode === "bridge_night";
   const isEngine = watchMode === "engine";
 
+  const handlePostQuickNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = fastNoteText.trim();
+    if (!text) return;
+
+    const newNote: QuickNote = {
+      id: `qn-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      title: text.length > 35 ? text.substring(0, 35) + "..." : text,
+      content: text,
+      department: selectedDepartment === "All" ? "Engine" : selectedDepartment,
+      authorRank: userRank || "Watch Officer",
+      priority: "Routine",
+      colorTag: "amber",
+      createdAt: new Date().toISOString(),
+      isResolved: false,
+    };
+
+    onAddQuickNote(newNote);
+    setFastNoteText("");
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Department Quick Filter Bar - Clutter Reducer */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <Filter className="w-4 h-4 text-amber-500 shrink-0" />
+          <span>Department Focus:</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+          {DEPARTMENTS.map((dept) => {
+            const isSelected = selectedDepartment === dept.id;
+            return (
+              <button
+                key={dept.id}
+                onClick={() => setSelectedDepartment(dept.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isSelected
+                    ? "bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-500/30"
+                    : "bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                }`}
+              >
+                <span>{dept.icon}</span>
+                <span>{dept.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Hero / Rapid Triage Bar */}
       <div
         className={`p-6 rounded-2xl border shadow-sm relative overflow-hidden ${
           isNight
             ? "bg-stone-900/90 border-red-900/60 text-red-200"
             : isEngine
-            ? "bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-slate-800 text-slate-100"
-            : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border-slate-800 text-white"
+            ? "bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 border-slate-800 text-slate-100"
+            : "bg-linear-to-br from-slate-900 via-slate-800 to-slate-950 border-slate-800 text-white"
         }`}
       >
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold mb-3">
             <Zap className="w-3.5 h-3.5 fill-amber-400" />
-            <span>Zero-Latency Offline Maritime Engine</span>
+            <span>Zero-Latency Offline Retrieval</span>
+            {selectedDepartment !== "All" && (
+              <span className="font-mono text-amber-200">• Filtered to {selectedDepartment}</span>
+            )}
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-            Instant Moment-of-Need Retrieval
+            Instant Moment-of-Need Triage
           </h2>
-          <p className="text-slate-300 text-sm sm:text-base mb-5 leading-relaxed">
+          <p className="text-slate-300 text-xs sm:text-sm mb-5 leading-relaxed">
             Find the exact fix, maker tolerances, or SOLAS/MARPOL requirements in seconds without internet. Type any alarm code, symptom, or machinery name:
           </p>
 
@@ -161,8 +262,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {matchedTriage.length === 0 && matchedEquipment.length === 0 ? (
             <div className="p-4 text-center text-sm text-slate-400 bg-slate-900/60 rounded-xl">
-              No direct past experience found for &quot;{triageInput}&quot;. Try generic keywords (e.g. &quot;purifier&quot;, &quot;injector&quot;, &quot;generator&quot;) or open the{" "}
-              <button onClick={onOpenAiModal} className="text-amber-400 font-bold underline">
+              No direct past experience found for &quot;{triageInput}&quot; in {selectedDepartment}. Try broader keywords or open the{" "}
+              <button onClick={onOpenAiModal} className="text-amber-400 font-bold underline cursor-pointer">
                 Maritime Technical AI Advisor
               </button>
               .
@@ -239,20 +340,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className={`p-4 rounded-xl border transition cursor-pointer group ${
             isNight
               ? "bg-stone-900 border-red-950 text-red-300"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-500 shadow-xs"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-sky-500 shadow-xs"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Critical Systems
+              {selectedDepartment === "All" ? "Tracked Systems" : `${selectedDepartment} Units`}
             </span>
             <div className="p-2 rounded-lg bg-sky-500/10 text-sky-500 dark:text-sky-400">
               <BookOpen className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{equipment.length}</span>
-            <span className="text-xs text-slate-500">Tracked Units</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">{filteredEquipment.length}</span>
+            <span className="text-xs text-slate-500">Machinery Specs</span>
           </div>
         </div>
 
@@ -266,7 +367,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Statutory Health
+              Statutory Compliance
             </span>
             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
               <ShieldCheck className="w-4 h-4" />
@@ -275,7 +376,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{compliantCount}</span>
             <span className="text-xs text-slate-500">
-              / {equipment.length} Compliant ({cautionCount > 0 ? `${cautionCount} Caution` : "All Safe"})
+              / {filteredEquipment.length} Compliant ({cautionCount > 0 ? `${cautionCount} Caution` : "All Safe"})
             </span>
           </div>
         </div>
@@ -297,32 +398,114 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{troubleshooting.length}</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">{filteredTroubleshooting.length}</span>
             <span className="text-xs text-slate-500">Documented Fixes</span>
           </div>
         </div>
 
         <div
-          onClick={() => setActiveTab("checklists")}
+          onClick={() => setActiveTab("notes")}
           className={`p-4 rounded-xl border transition cursor-pointer group ${
             isNight
               ? "bg-stone-900 border-red-950 text-red-300"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-rose-500 shadow-xs"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-500 shadow-xs"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Emergency Cards
+              Watch Scratchpad
             </span>
-            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500 dark:text-rose-400">
-              <AlertTriangle className="w-4 h-4" />
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 dark:text-amber-400">
+              <StickyNote className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{checklists.length}</span>
-            <span className="text-xs text-slate-500">Drills & Action Guides</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">{activeNotesCount}</span>
+            <span className="text-xs text-slate-500">Pending Handover</span>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Notes Quick Widget */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <StickyNote className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Watch Handover Scratchpad & Quick Sticky Notes
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Quick memos for when you don&apos;t have time to complete a full log. Convert to incident log anytime.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setActiveTab("notes")}
+            className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+          >
+            All Notes ({filteredNotes.length}) <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Quick Post Box */}
+        <form onSubmit={handlePostQuickNote} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Jot down immediate note (e.g. DG #1 fuel rack sticking slightly, clean OWS sensor tomorrow)..."
+            value={fastNoteText}
+            onChange={(e) => setFastNoteText(e.target.value)}
+            className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
+          <button
+            type="submit"
+            disabled={!fastNoteText.trim()}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1 shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Pin Note</span>
+          </button>
+        </form>
+
+        {/* Active Notes Mini Grid */}
+        {filteredNotes.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            {filteredNotes.slice(0, 3).map((note) => (
+              <div
+                key={note.id}
+                className="p-3.5 rounded-xl border border-amber-400/30 bg-amber-500/10 text-xs flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                      {note.department}
+                    </span>
+                    <span className="text-[10px] text-slate-500">{note.authorRank}</span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1 line-clamp-1">{note.title}</h4>
+                  <p className="text-slate-700 dark:text-slate-300 text-[11px] line-clamp-2 leading-relaxed">
+                    {note.content}
+                  </p>
+                </div>
+                <div className="pt-2.5 mt-2 border-t border-amber-500/20 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onConvertToLog(note)}
+                    className="text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    Convert to Log <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Dual Section: Statutory Standards (Amber) vs Vessel Live Records (Emerald) */}
@@ -332,20 +515,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
               <span>Statutory Law vs. Current Onboard Status</span>
               <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                (Pre-filled official limits compared with live vessel parameters)
+                (Official pre-filled law limits & live readings)
               </span>
             </h3>
           </div>
           <button
             onClick={() => setActiveTab("statutory")}
-            className="text-xs font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 flex items-center gap-1"
+            className="text-xs font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 flex items-center gap-1 cursor-pointer"
           >
             Full Matrix <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {equipment.slice(0, 4).map((item) => (
+          {filteredEquipment.slice(0, 4).map((item) => (
             <div
               key={item.id}
               onClick={() => onSelectEquipment(item.id)}
@@ -431,141 +614,111 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Breakdown Experiences & Technical Photos Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Recent Incident Experiences */}
-        <div className="lg:col-span-2 space-y-3">
+      {/* Emergency Action Scenarios & Change Log Audit Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Emergency Scenarios */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-amber-500" />
-              <span>Recent Breakdown Experiences & Fixes</span>
-            </h3>
-            <button
-              onClick={() => setActiveTab("troubleshooting")}
-              className="text-xs font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 flex items-center gap-1"
-            >
-              View All ({troubleshooting.length}) <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {troubleshooting.slice(0, 3).map((tr) => (
-              <div
-                key={tr.id}
-                onClick={() => onSelectTroubleshooting(tr.id)}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-500/60 transition cursor-pointer shadow-xs"
-              >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {tr.department}
-                    </span>
-                    <span className="text-xs text-slate-500">{tr.area}</span>
-                  </div>
-                  <span className="text-xs text-slate-400 font-mono">{tr.dateOfIncident}</span>
-                </div>
-
-                <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1.5">
-                  {tr.symptomOrAlarm}
-                </h4>
-
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 text-xs space-y-1 mb-2.5">
-                  <p className="text-slate-700 dark:text-slate-300">
-                    <strong className="text-amber-600 dark:text-amber-400">Root Cause:</strong> {tr.rootCause}
-                  </p>
-                  <p className="text-slate-600 dark:text-slate-400 line-clamp-2">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Solution Applied:</strong>{" "}
-                    {tr.actionTakenAndFix}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Logged by:</span>
-                    <span>{tr.seafarerRank}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {tr.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <AlertOctagon className="w-4 h-4" />
               </div>
-            ))}
-          </div>
-        </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Emergency Action Scenarios</h3>
+                <p className="text-[11px] text-slate-500">Action cards & drills ready for immediate execution</p>
+              </div>
+            </div>
 
-        {/* Right 1 Col: Technical Photos & Emergency Drills */}
-        <div className="space-y-4">
-          {/* Emergency Drills Quick Card */}
-          <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5 dark:bg-rose-950/20 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4" /> Ready Emergency Cards
-              </h4>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenAddEmergencyModal}
+                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-1 shadow-xs"
+              >
+                <Plus className="w-3 h-3" />
+                <span>+ Scenario</span>
+              </button>
               <button
                 onClick={() => setActiveTab("checklists")}
-                className="text-[11px] font-bold text-rose-500 hover:underline"
+                className="text-xs font-bold text-rose-500 hover:underline"
               >
-                Open All
+                View All ({filteredChecklists.length})
               </button>
             </div>
-            <div className="space-y-2">
-              {checklists.map((chk) => (
+          </div>
+
+          <div className="space-y-2.5">
+            {filteredChecklists.slice(0, 3).map((chk) => {
+              const doneCount = chk.steps.filter((s) => s.isChecked).length;
+              return (
                 <div
                   key={chk.id}
                   onClick={() => setActiveTab("checklists")}
-                  className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-rose-400 transition cursor-pointer text-xs flex items-center justify-between"
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-rose-400 transition cursor-pointer flex items-center justify-between"
                 >
-                  <div className="font-semibold text-slate-800 dark:text-slate-200 truncate mr-2">
-                    {chk.title}
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                        {chk.department}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">{chk.solasOrSmReference}</span>
+                    </div>
+                    <h4 className="font-bold text-xs text-slate-900 dark:text-white">{chk.title}</h4>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0 font-bold">
-                    {chk.steps.length} Steps
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {doneCount}/{chk.steps.length}
+                    </span>
+                    <span className="text-[10px] block text-rose-500">{chk.criticalTimeWindow}</span>
+                  </div>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Change Log / Audit Trail Stream */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <History className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Audit Trail & Change Log</h3>
+                <p className="text-[11px] text-slate-500">Live event logs for class and SMS inspection</p>
+              </div>
             </div>
+
+            <button
+              onClick={() => setActiveTab("changelog")}
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
+              Full Trail ({filteredChangeLogs.length}) <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* Technical Photos & Nameplates Vault */}
-          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-sky-400" /> Attached Nameplates & Schematics
-              </h4>
-              <span className="text-xs text-slate-400">{allPhotos.length} images</span>
-            </div>
-
-            {allPhotos.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-950 rounded-lg">
-                No photos attached yet. You can attach small nameplate images, diagrams, or damaged parts when logging an entry.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {allPhotos.slice(0, 4).map((item, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => onSelectPhoto(item.photo)}
-                    className="group relative rounded-lg overflow-hidden border border-slate-700 bg-slate-950 aspect-video cursor-pointer hover:opacity-90 transition"
-                  >
-                    <img
-                      src={item.photo.dataUrl}
-                      alt={item.photo.caption}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1.5">
-                      <p className="text-[10px] text-white font-medium truncate">{item.photo.caption}</p>
-                    </div>
+          <div className="space-y-2.5">
+            {filteredChangeLogs.slice(0, 3).map((log) => (
+              <div
+                key={log.id}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-start justify-between gap-3 text-xs"
+              >
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 uppercase">
+                      {log.action}
+                    </span>
+                    <span className="text-[10px] text-slate-400">{log.entityType}</span>
                   </div>
-                ))}
+                  <h4 className="font-bold text-slate-900 dark:text-white text-xs">{log.entityTitle}</h4>
+                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{log.summary}</p>
+                </div>
+                <div className="text-right text-[10px] text-slate-400 shrink-0">
+                  <span>{new Date(log.timestamp).toLocaleDateString([], { month: "short", day: "numeric" })}</span>
+                  <span className="block font-semibold text-slate-600 dark:text-slate-300">{log.authorRank}</span>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>

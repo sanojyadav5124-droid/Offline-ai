@@ -1,13 +1,21 @@
-import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist } from "../types";
-import { PRESET_EQUIPMENT_ITEMS, PRESET_TROUBLESHOOTING_LOGS, PRESET_EMERGENCY_CHECKLISTS } from "../data/maritimePresets";
+import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry } from "../types";
+import {
+  PRESET_EQUIPMENT_ITEMS,
+  PRESET_TROUBLESHOOTING_LOGS,
+  PRESET_EMERGENCY_CHECKLISTS,
+  PRESET_QUICK_NOTES,
+  PRESET_CHANGE_LOGS,
+} from "../data/maritimePresets";
 
 const STORAGE_KEYS = {
-  EQUIPMENT: "blueprint_maritime_equipment_v1",
-  TROUBLESHOOTING: "blueprint_maritime_troubleshooting_v1",
-  CHECKLISTS: "blueprint_maritime_checklists_v1",
-  VESSEL_NAME: "blueprint_maritime_vessel_name",
-  USER_RANK: "blueprint_maritime_user_rank",
-  WATCH_MODE: "blueprint_maritime_watch_mode",
+  EQUIPMENT: "anchor_ai_equipment_v2",
+  TROUBLESHOOTING: "anchor_ai_troubleshooting_v2",
+  CHECKLISTS: "anchor_ai_checklists_v2",
+  QUICK_NOTES: "anchor_ai_quick_notes_v2",
+  CHANGE_LOGS: "anchor_ai_change_logs_v2",
+  VESSEL_NAME: "anchor_ai_vessel_name",
+  USER_RANK: "anchor_ai_user_rank",
+  WATCH_MODE: "anchor_ai_watch_mode",
 };
 
 // Safe Local Storage retrieval with fallback
@@ -80,7 +88,67 @@ export function saveEmergencyChecklists(checklists: EmergencyChecklist[]): void 
   }
 }
 
-// Compress image to small dataUrl (max 1000px, 0.7 quality) to keep offline storage light
+export function loadQuickNotes(): QuickNote[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.QUICK_NOTES);
+    if (!raw) {
+      saveQuickNotes(PRESET_QUICK_NOTES);
+      return PRESET_QUICK_NOTES;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : PRESET_QUICK_NOTES;
+  } catch (err) {
+    console.error("Error loading quick notes:", err);
+    return PRESET_QUICK_NOTES;
+  }
+}
+
+export function saveQuickNotes(notes: QuickNote[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.QUICK_NOTES, JSON.stringify(notes));
+  } catch (err) {
+    console.error("Error saving quick notes:", err);
+  }
+}
+
+export function loadChangeLogs(): ChangeLogEntry[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CHANGE_LOGS);
+    if (!raw) {
+      saveChangeLogs(PRESET_CHANGE_LOGS);
+      return PRESET_CHANGE_LOGS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : PRESET_CHANGE_LOGS;
+  } catch (err) {
+    console.error("Error loading change logs:", err);
+    return PRESET_CHANGE_LOGS;
+  }
+}
+
+export function saveChangeLogs(logs: ChangeLogEntry[]): void {
+  try {
+    // Keep max 300 logs to prevent bloat
+    const trimmed = logs.slice(0, 300);
+    localStorage.setItem(STORAGE_KEYS.CHANGE_LOGS, JSON.stringify(trimmed));
+  } catch (err) {
+    console.error("Error saving change logs:", err);
+  }
+}
+
+export function logAuditEntry(entry: Omit<ChangeLogEntry, "id" | "timestamp">): ChangeLogEntry {
+  const currentLogs = loadChangeLogs();
+  const newEntry: ChangeLogEntry = {
+    id: `cl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    timestamp: new Date().toISOString(),
+    ...entry,
+  };
+  const updated = [newEntry, ...currentLogs];
+  saveChangeLogs(updated);
+  return newEntry;
+}
+
+// Compress image to small dataUrl (max 1024px, 0.72 quality) to keep offline storage light
 export function compressImageFile(file: File, maxDimension = 1024, quality = 0.72): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -124,13 +192,15 @@ export function compressImageFile(file: File, maxDimension = 1024, quality = 0.7
 // Export Full Maritime Knowledge Vault as a single USB-ready JSON file
 export function exportMaritimeVaultJSON(): string {
   const payload = {
-    appName: "Blueprint Maritime Vault",
-    version: "1.0",
+    appName: "ANCHOR AI Maritime Vault",
+    version: "2.0",
     exportedAt: new Date().toISOString(),
     vesselName: localStorage.getItem(STORAGE_KEYS.VESSEL_NAME) || "M/V PACIFIC HORIZON",
     equipment: loadEquipmentItems(),
     troubleshooting: loadTroubleshootingLogs(),
     checklists: loadEmergencyChecklists(),
+    quickNotes: loadQuickNotes(),
+    changeLogs: loadChangeLogs(),
   };
   return JSON.stringify(payload, null, 2);
 }
@@ -139,8 +209,8 @@ export function exportMaritimeVaultJSON(): string {
 export function importMaritimeVaultJSON(jsonString: string): { success: boolean; message: string; count: number } {
   try {
     const data = JSON.parse(jsonString);
-    if (!data.equipment && !data.troubleshooting) {
-      return { success: false, message: "Invalid Blueprint Maritime backup format.", count: 0 };
+    if (!data.equipment && !data.troubleshooting && !data.checklists && !data.quickNotes) {
+      return { success: false, message: "Invalid ANCHOR AI Maritime backup format.", count: 0 };
     }
 
     let addedCount = 0;
@@ -161,7 +231,32 @@ export function importMaritimeVaultJSON(jsonString: string): { success: boolean;
       addedCount += newLogs.length;
     }
 
-    return { success: true, message: "Maritime Vault successfully synchronized!", count: addedCount };
+    if (Array.isArray(data.checklists)) {
+      const currentChecklists = loadEmergencyChecklists();
+      const existingIds = new Set(currentChecklists.map((c) => c.id));
+      const newChecklists = data.checklists.filter((chk: EmergencyChecklist) => !existingIds.has(chk.id));
+      saveEmergencyChecklists([...currentChecklists, ...newChecklists]);
+      addedCount += newChecklists.length;
+    }
+
+    if (Array.isArray(data.quickNotes)) {
+      const currentNotes = loadQuickNotes();
+      const existingIds = new Set(currentNotes.map((n) => n.id));
+      const newNotes = data.quickNotes.filter((n: QuickNote) => !existingIds.has(n.id));
+      saveQuickNotes([...currentNotes, ...newNotes]);
+      addedCount += newNotes.length;
+    }
+
+    logAuditEntry({
+      action: "CREATE",
+      entityType: "Equipment Machinery",
+      entityTitle: `Imported Backup Package (${addedCount} new records)`,
+      department: "Engine",
+      authorRank: "System Sync",
+      summary: `Restored/Merged ${addedCount} records from USB Backup file.`,
+    });
+
+    return { success: true, message: "ANCHOR AI Maritime Vault successfully synchronized!", count: addedCount };
   } catch (err: any) {
     return { success: false, message: `Import failed: ${err.message}`, count: 0 };
   }

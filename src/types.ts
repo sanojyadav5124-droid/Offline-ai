@@ -93,6 +93,34 @@ export interface EmergencyChecklist {
     isChecked: boolean;
     assignedRole: string; // e.g. "Officer of the Watch", "Duty Engineer", "Master"
   }[];
+  isCustom?: boolean;
+  createdAt?: string;
+}
+
+export interface QuickNote {
+  id: string;
+  title: string;
+  content: string;
+  department: MaritimeDepartment;
+  authorRank: string;
+  priority: "Routine" | "Urgent" | "Critical Safety";
+  colorTag: "amber" | "emerald" | "sky" | "rose" | "indigo";
+  createdAt: string;
+  isResolved: boolean;
+  relatedEquipment?: string;
+}
+
+export interface ChangeLogEntry {
+  id: string;
+  timestamp: string;
+  action: "CREATE" | "UPDATE" | "DELETE" | "TEST_LOGGED" | "NOTE_CONVERTED";
+  entityType: "Equipment Machinery" | "Troubleshooting Incident" | "Emergency Scenario Card" | "Statutory Rule" | "Quick Scratchpad";
+  entityId?: string;
+  entityTitle: string;
+  department: MaritimeDepartment;
+  authorRank: string;
+  summary: string;
+  details?: string;
 }
 
 export interface MaritimeQueryResponse {

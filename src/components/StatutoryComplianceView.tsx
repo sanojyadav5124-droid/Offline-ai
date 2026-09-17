@@ -12,19 +12,21 @@ import {
   Edit2,
   Ship,
   Info,
+  Plus,
 } from "lucide-react";
 import { EquipmentKnowledgeItem, WatchMode } from "../types";
-import { MARITIME_STATUTORY_CODES } from "../data/maritimePresets";
 
 interface StatutoryComplianceViewProps {
   equipmentList: EquipmentKnowledgeItem[];
   onUpdateReading: (eq: EquipmentKnowledgeItem) => void;
+  onOpenAddStatutory: () => void;
   watchMode: WatchMode;
 }
 
 export const StatutoryComplianceView: React.FC<StatutoryComplianceViewProps> = ({
   equipmentList,
   onUpdateReading,
+  onOpenAddStatutory,
   watchMode,
 }) => {
   const [selectedBody, setSelectedBody] = useState<string>("All");
@@ -61,12 +63,22 @@ export const StatutoryComplianceView: React.FC<StatutoryComplianceViewProps> = (
           </p>
         </div>
 
-        {/* Compliance Banner */}
-        <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4" />
-          <span>
-            {compliantCount} of {equipmentList.length} Systems Fully Compliant
-          </span>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={onOpenAddStatutory}
+            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Add Statutory Rule</span>
+          </button>
+
+          {/* Compliance Banner */}
+          <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" />
+            <span>
+              {compliantCount} of {equipmentList.length} Compliant
+            </span>
+          </div>
         </div>
       </div>
 

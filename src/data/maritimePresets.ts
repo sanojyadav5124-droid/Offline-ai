@@ -1,4 +1,4 @@
-import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist } from "../types";
+import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry } from "../types";
 
 export const PRESET_EQUIPMENT_ITEMS: EquipmentKnowledgeItem[] = [
   {
@@ -679,4 +679,108 @@ export const MARITIME_STATUTORY_CODES = [
     interval: "Monthly",
     category: "Electrical",
   },
+];
+
+export const PRESET_QUICK_NOTES: QuickNote[] = [
+  {
+    id: "qn-01",
+    title: "FW Generator vacuum drop check",
+    content: "During afternoon watch vacuum dropped from 92% to 78%. Ejector pump pressure is 4.8 bar. Clean ejector nozzle and check air vent cock before start of next watch.",
+    department: "Engine",
+    authorRank: "3rd Engineer",
+    priority: "Urgent",
+    colorTag: "amber",
+    createdAt: "2026-09-17T11:45:00Z",
+    isResolved: false,
+    relatedEquipment: "Fresh Water Generator (Plate Type Alfa Laval)",
+  },
+  {
+    id: "qn-02",
+    title: "Port Bridge Wing Repeater illumination",
+    content: "Dimmer knob on port gyro repeater flickering when vibration occurs. Contact cleaner sprayed, spare potentiometer available in ETO locker Bin 14.",
+    department: "Electrical",
+    authorRank: "ETO",
+    priority: "Routine",
+    colorTag: "sky",
+    createdAt: "2026-09-17T09:15:00Z",
+    isResolved: false,
+    relatedEquipment: "Gyrocompass & Repeater System",
+  },
+  {
+    id: "qn-03",
+    title: "Bunker Line Sample Flange Seal",
+    content: "New Teflon gasket fitted on manifold continuous drip sampler. Confirmed leak-free during last night transfer.",
+    department: "Deck",
+    authorRank: "Chief Officer",
+    priority: "Routine",
+    colorTag: "emerald",
+    createdAt: "2026-09-16T18:30:00Z",
+    isResolved: true,
+    relatedEquipment: "Bunker Manifold Drip Sampler",
+  },
+  {
+    id: "qn-04",
+    title: "EEBD Inspection Tag renewal in Workshop",
+    content: "Emergency Escape Breathing Device near lathe machine due for monthly pressure gauge check and seal verification.",
+    department: "Safety_ISM",
+    authorRank: "Safety Officer",
+    priority: "Critical Safety",
+    colorTag: "rose",
+    createdAt: "2026-09-17T08:00:00Z",
+    isResolved: false,
+    relatedEquipment: "Workshop Safety Station",
+  }
+];
+
+export const PRESET_CHANGE_LOGS: ChangeLogEntry[] = [
+  {
+    id: "cl-01",
+    timestamp: "2026-09-17T13:20:00Z",
+    action: "CREATE",
+    entityType: "Quick Scratchpad",
+    entityTitle: "FW Generator vacuum drop check",
+    department: "Engine",
+    authorRank: "3rd Engineer",
+    summary: "Created fast scratchpad note regarding fresh water generator ejector nozzle check.",
+  },
+  {
+    id: "cl-02",
+    timestamp: "2026-09-16T16:40:00Z",
+    action: "TEST_LOGGED",
+    entityType: "Equipment Machinery",
+    entityTitle: "15 PPM Bilge Water Separator (OWS)",
+    department: "Engine",
+    authorRank: "2nd Engineer",
+    summary: "Recorded monthly statutory test reading: 2.8 PPM (Compliant). 3-way valve trip verified.",
+  },
+  {
+    id: "cl-03",
+    timestamp: "2026-09-15T10:15:00Z",
+    action: "CREATE",
+    entityType: "Emergency Scenario Card",
+    entityTitle: "Blackout & Emergency Generator Auto-Start Recovery",
+    department: "Engine",
+    authorRank: "Chief Engineer",
+    summary: "Added standardized SOLAS II-1 Reg 43 emergency recovery sequence card with 8 actionable steps.",
+  },
+  {
+    id: "cl-04",
+    timestamp: "2026-09-14T09:00:00Z",
+    action: "UPDATE",
+    entityType: "Troubleshooting Incident",
+    entityTitle: "Auxiliary Generator #2 (Yanmar 6EY18ALW)",
+    department: "Engine",
+    authorRank: "2nd Engineer",
+    summary: "Updated root cause and lessons learned on actuator mechanical binding incident.",
+  },
+  {
+    id: "cl-05",
+    timestamp: "2026-09-13T14:30:00Z",
+    action: "CREATE",
+    entityType: "Equipment Machinery",
+    entityTitle: "Electro-Hydraulic 4-Ram Steering Gear",
+    department: "Deck",
+    authorRank: "Chief Officer",
+    summary: "Added SOLAS V Reg 26 steering gear 28s hard-over test baseline and spares register.",
+  }
 ];

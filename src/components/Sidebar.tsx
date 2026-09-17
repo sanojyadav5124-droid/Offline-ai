@@ -15,15 +15,19 @@ import {
   Ship,
   Sparkles,
   Zap,
+  StickyNote,
+  History,
 } from "lucide-react";
 import { MaritimeDepartment, WatchMode } from "../types";
 
 export type ActiveTab =
   | "dashboard"
+  | "notes"
   | "equipment"
   | "troubleshooting"
   | "statutory"
   | "checklists"
+  | "changelog"
   | "backup"
   | "ai_advisor";
 
@@ -41,6 +45,8 @@ interface SidebarProps {
   setIsOpenMobile: (open: boolean) => void;
   equipmentCount: number;
   troubleshootingCount: number;
+  notesCount: number;
+  changeLogCount: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -57,8 +63,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsOpenMobile,
   equipmentCount,
   troubleshootingCount,
+  notesCount,
+  changeLogCount,
 }) => {
-  const departments: { id: MaritimeDepartment | "All"; label: string; icon: string; count?: number }[] = [
+  const departments: { id: MaritimeDepartment | "All"; label: string; icon: string }[] = [
     { id: "All", label: "All Departments", icon: "🌐" },
     { id: "Engine", label: "Engine Room", icon: "⚙️" },
     { id: "Deck", label: "Deck & Bridge", icon: "🧭" },
@@ -100,17 +108,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-5 border-b border-slate-800/80 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
-                <Compass className="w-6 h-6 stroke-[2.5]" />
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+                <Anchor className="w-6 h-6 stroke-[2.5]" />
               </div>
               <div>
-                <h1 className="font-bold text-lg tracking-tight flex items-center gap-1.5 text-white">
-                  Blueprint
+                <h1 className="font-black text-lg tracking-tight flex items-center gap-1.5 text-white">
+                  ANCHOR AI
                   <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    At Sea
+                    Offline
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400 font-medium">Maritime Knowledge Vault</p>
+                <p className="text-xs text-slate-400 font-medium">Seafarer Knowledge & Audit Vault</p>
               </div>
             </div>
           </div>
@@ -128,9 +136,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title="Click to edit vessel name"
               />
             </div>
-            <span className="flex h-2 w-2 relative">
+            <span className="flex h-2 w-2 relative" title="100% Offline Active">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" title="100% Offline Active"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
           </div>
         </div>
@@ -145,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full py-2.5 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-            <span>Log Experience / Specs</span>
+            <span>+ Log Entry / Machinery</span>
           </button>
         </div>
 
@@ -154,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Core Views */}
           <div>
             <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Workspace & Hub
+              Shipboard Modules
             </p>
             <nav className="space-y-1">
               <button
@@ -170,6 +178,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               <button
+                onClick={() => handleNavClick("notes")}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition ${
+                  activeTab === "notes"
+                    ? "bg-amber-500/15 text-amber-300 font-semibold border-l-3 border-amber-500"
+                    : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <StickyNote className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-left">Watch Scratchpad</span>
+                </div>
+                {notesCount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                    {notesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => handleNavClick("equipment")}
                 className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition ${
                   activeTab === "equipment"
@@ -179,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-4 h-4 text-sky-400 shrink-0" />
-                  <span className="text-left">Equipment & Maker Specs</span>
+                  <span className="text-left">Equipment & Specs</span>
                 </div>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                   {equipmentCount}
@@ -214,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <FileCheck2 className="w-4 h-4 text-indigo-400 shrink-0" />
                 <span className="flex-1 text-left">Statutory Law Matrix</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300">
-                  SOLAS/MARPOL
+                  SOLAS
                 </span>
               </button>
 
@@ -228,6 +255,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
                 <span className="flex-1 text-left">Emergency Action Cards</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick("changelog")}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition ${
+                  activeTab === "changelog"
+                    ? "bg-amber-500/15 text-amber-300 font-semibold border-l-3 border-amber-500"
+                    : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <History className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span className="text-left">Change Log & Audit</span>
+                </div>
+                {changeLogCount > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+                    {changeLogCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -247,7 +293,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Departments Quick Filter */}
           <div>
             <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Shipboard Departments
+              Department Filter
             </p>
             <div className="space-y-1">
               {departments.map((dept) => (
@@ -255,9 +301,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={dept.id}
                   onClick={() => {
                     setSelectedDepartment(dept.id);
-                    if (activeTab === "dashboard") {
-                      setActiveTab("equipment");
-                    }
                   }}
                   className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-lg transition ${
                     selectedDepartment === dept.id
@@ -269,6 +312,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span>{dept.icon}</span>
                     <span>{dept.label}</span>
                   </span>
+                  {selectedDepartment === dept.id && (
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded">
+                      Active
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -288,7 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <HardDriveDownload className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span className="flex-1 text-left">USB Drive Backup & Sync</span>
+              <span className="flex-1 text-left">USB Backup & Sync</span>
             </button>
           </div>
         </div>

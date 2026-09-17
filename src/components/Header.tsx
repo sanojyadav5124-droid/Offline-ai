@@ -26,6 +26,8 @@ interface HeaderProps {
   equipmentList: EquipmentKnowledgeItem[];
   troubleshootingList: TroubleshootingEntry[];
   onSelectItem: (type: "equipment" | "troubleshooting", id: string) => void;
+  userRank: string;
+  setUserRank: (rank: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,6 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
   equipmentList,
   troubleshootingList,
   onSelectItem,
+  userRank,
+  setUserRank,
 }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -208,7 +212,28 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Officer Rank Selector */}
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+            <span className="text-[11px] text-slate-400 font-medium">Rank:</span>
+            <select
+              value={userRank}
+              onChange={(e) => setUserRank(e.target.value)}
+              className="bg-transparent font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="Chief Engineer" className="bg-slate-900 text-white">Chief Engineer</option>
+              <option value="2nd Engineer" className="bg-slate-900 text-white">2nd Engineer</option>
+              <option value="3rd Engineer" className="bg-slate-900 text-white">3rd Engineer</option>
+              <option value="4th Engineer" className="bg-slate-900 text-white">4th Engineer</option>
+              <option value="Master / Captain" className="bg-slate-900 text-white">Master / Captain</option>
+              <option value="Chief Officer" className="bg-slate-900 text-white">Chief Officer</option>
+              <option value="2nd Officer" className="bg-slate-900 text-white">2nd Officer</option>
+              <option value="3rd Officer" className="bg-slate-900 text-white">3rd Officer</option>
+              <option value="Electro-Technical Officer (ETO)" className="bg-slate-900 text-white">ETO</option>
+              <option value="Bosun / Deck Foreman" className="bg-slate-900 text-white">Bosun</option>
+            </select>
+          </div>
+
           <button
             onClick={onOpenAiModal}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition cursor-pointer"

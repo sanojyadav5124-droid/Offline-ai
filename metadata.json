@@ -1,6 +1,6 @@
 {
-  "name": "Blueprint",
-  "description": "Offline maritime knowledge vault, statutory compliance comparator, and rapid technical retrieval assistant for seafarers at sea.",
+  "name": "ANCHOR AI",
+  "description": "Maritime Knowledge Vault, Emergency Action Cards, Statutory Compliance Matrix, Scratchpad & Real-Time Technical Diagnostic Assistant for Seafarers.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

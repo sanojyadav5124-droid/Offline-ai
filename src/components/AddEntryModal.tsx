@@ -32,6 +32,8 @@ interface AddEntryModalProps {
   onSaveTroubleshooting: (entry: TroubleshootingEntry) => void;
   existingEquipmentList: EquipmentKnowledgeItem[];
   initialPrefillName?: string;
+  initialPrefillNote?: { title?: string; content?: string; department?: MaritimeDepartment; relatedEquipment?: string };
+  initialMode?: "equipment" | "troubleshooting";
 }
 
 export const AddEntryModal: React.FC<AddEntryModalProps> = ({
@@ -41,8 +43,10 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   onSaveTroubleshooting,
   existingEquipmentList,
   initialPrefillName,
+  initialPrefillNote,
+  initialMode,
 }) => {
-  const [entryMode, setEntryMode] = useState<"equipment" | "troubleshooting">("troubleshooting");
+  const [entryMode, setEntryMode] = useState<"equipment" | "troubleshooting">(initialMode || "troubleshooting");
 
   // Common Fields
   const [department, setDepartment] = useState<MaritimeDepartment>("Engine");
@@ -81,6 +85,28 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   // Photos
   const [photos, setPhotos] = useState<PhotoAttachment[]>([]);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    if (initialMode) {
+      setEntryMode(initialMode);
+    }
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (initialPrefillNote) {
+      if (initialPrefillNote.department) setDepartment(initialPrefillNote.department);
+      if (initialPrefillNote.relatedEquipment) {
+        setEquipmentName(initialPrefillNote.relatedEquipment);
+      } else if (initialPrefillNote.title) {
+        setEquipmentName(initialPrefillNote.title);
+      }
+      if (initialPrefillNote.content) {
+        setSymptomOrAlarm(initialPrefillNote.content);
+        setActionTakenAndFix(initialPrefillNote.content);
+      }
+    }
+  }, [initialPrefillNote]);
 
   // Auto-population handler when choosing or typing equipment
   const handleAutoPopulateFromExisting = (selectedName: string) => {
@@ -151,64 +177,77 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError("");
 
-    if (!equipmentName.trim()) {
-      alert("Please provide the Equipment / System Name");
-      return;
-    }
+    const cleanEqName = equipmentName.trim();
+    const cleanSymptom = symptomOrAlarm.trim();
+    const cleanAction = actionTakenAndFix.trim();
+    const cleanRoot = rootCause.trim();
 
+    // Check that at least some information was entered (avoid saving 100% empty record)
     if (entryMode === "equipment") {
+      if (!cleanEqName && !maker.trim() && !model.trim() && !statLimit.trim()) {
+        setValidationError("Please enter at least an Equipment Name or Maker/Model to save.");
+        return;
+      }
+
+      const finalEqName = cleanEqName || `${maker.trim() || "Auxiliary"} ${model.trim() || "Machinery Unit"}`.trim() || "Marine Auxiliary Machinery";
+
       const newEq: EquipmentKnowledgeItem = {
         id: `eq-${Date.now()}`,
         department,
-        area,
-        equipmentName,
-        maker: maker || "Marine Standard",
-        model: model || "Standard Model",
-        installedLocation,
+        area: area.trim() || "Machinery Space",
+        equipmentName: finalEqName,
+        maker: maker.trim() || "Standard Marine Maker",
+        model: model.trim() || "Standard Model",
+        installedLocation: installedLocation.trim() || "Main Engine Room",
         statutoryRequirement: {
           id: `stat-${Date.now()}`,
-          regulationCode: regCode,
+          regulationCode: regCode.trim() || "SOLAS II-1 Reg 41",
           governingBody: govBody,
-          requirementSummary: statSummary,
-          statutoryLimitValue: statLimit,
+          requirementSummary: statSummary.trim() || "Standard classification requirement for continuous power & reliability.",
+          statutoryLimitValue: statLimit.trim() || "Nominal design limits",
           testInterval,
-          standardTolerance: tolerance,
+          standardTolerance: tolerance.trim() || "±5% manufacturer standard",
         },
         currentReading: {
-          measuredValue,
+          measuredValue: measuredValue.trim() || "Nominal",
           unit: "",
           lastTestedDate: testedDate,
           testedByRank,
           status,
-          notes: readingNotes,
+          notes: readingNotes.trim() || "Nominal operating test logged.",
         },
         makerDesignSpecs: [
-          { label: "Nominal Operating Band", nominalValue: statLimit, alarmLimit: "Deviation Alert" },
+          { label: "Nominal Operating Band", nominalValue: statLimit.trim() || "Nominal", alarmLimit: "Deviation Alert" },
         ],
-        quickNotes: readingNotes,
-        criticalSparesOnboard: sparesUsed ? [sparesUsed] : [],
+        quickNotes: readingNotes.trim() || "Operational record.",
+        criticalSparesOnboard: sparesUsed.trim() ? [sparesUsed.trim()] : [],
         photos,
         updatedAt: new Date().toISOString(),
       };
       onSaveEquipment(newEq);
     } else {
-      if (!symptomOrAlarm.trim()) {
-        alert("Please describe the Symptom or Alarm observed");
+      if (!cleanEqName && !cleanSymptom && !cleanAction && !cleanRoot) {
+        setValidationError("Please enter at least an Equipment Name, Symptom, or Action Taken.");
         return;
       }
+
+      const finalEqName = cleanEqName || "General Marine System";
+      const finalSymptom = cleanSymptom || "Watch Observation / Operational Defect Log";
+
       const newLog: TroubleshootingEntry = {
         id: `tr-${Date.now()}`,
-        equipmentName,
+        equipmentName: finalEqName,
         department,
-        area,
+        area: area.trim() || "Machinery Space",
         dateOfIncident: testedDate,
-        symptomOrAlarm,
-        rootCause: rootCause || "Under Investigation / Pending Root Analysis",
-        actionTakenAndFix: actionTakenAndFix || "Inspected and restored to normal operation.",
-        sparesUsed: sparesUsed || "None recorded",
+        symptomOrAlarm: finalSymptom,
+        rootCause: cleanRoot || "Under Investigation / Pending Root Analysis",
+        actionTakenAndFix: cleanAction || "Inspected and restored to normal operation.",
+        sparesUsed: sparesUsed.trim() || "None recorded",
         seafarerRank: testedByRank,
-        lessonsLearned,
+        lessonsLearned: lessonsLearned.trim() || "Follow standard watchkeeping checklist.",
         severity,
         photos,
         tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
@@ -247,7 +286,10 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         <div className="p-3 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setEntryMode("troubleshooting")}
+            onClick={() => {
+              setEntryMode("troubleshooting");
+              setValidationError("");
+            }}
             className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
               entryMode === "troubleshooting"
                 ? "bg-amber-500 text-slate-950 shadow-xs"
@@ -260,7 +302,10 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
           <button
             type="button"
-            onClick={() => setEntryMode("equipment")}
+            onClick={() => {
+              setEntryMode("equipment");
+              setValidationError("");
+            }}
             className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
               entryMode === "equipment"
                 ? "bg-amber-500 text-slate-950 shadow-xs"
@@ -271,6 +316,13 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             <span>2. Machinery Specs & Statutory Rule</span>
           </button>
         </div>
+
+        {validationError && (
+          <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{validationError}</span>
+          </div>
+        )}
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
