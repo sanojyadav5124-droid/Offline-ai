@@ -41,6 +41,7 @@ interface SidebarProps {
   vesselName: string;
   setVesselName: (name: string) => void;
   onOpenAddModal: () => void;
+  onOpenGuideManual?: () => void;
   isOpenMobile: boolean;
   setIsOpenMobile: (open: boolean) => void;
   equipmentCount: number;
@@ -59,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   vesselName,
   setVesselName,
   onOpenAddModal,
+  onOpenGuideManual,
   isOpenMobile,
   setIsOpenMobile,
   equipmentCount,
@@ -323,9 +325,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Backup & Portability */}
-          <div>
+          <div className="space-y-1">
             <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Data & Handover
+              Data & Documentation
             </p>
             <button
               onClick={() => handleNavClick("backup")}
@@ -338,53 +340,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <HardDriveDownload className="w-4 h-4 text-cyan-400 shrink-0" />
               <span className="flex-1 text-left">USB Backup & Sync</span>
             </button>
+
+            {onOpenGuideManual && (
+              <button
+                onClick={() => {
+                  onOpenGuideManual();
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg text-amber-300/90 hover:bg-slate-800/60 hover:text-amber-200 transition cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="flex-1 text-left font-bold">Guide & Instruction Manual</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Watch Mode Selector (Day, Engine, Bridge Red) */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/60">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1">
-            Watch Lighting Mode
-          </p>
-          <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
-            <button
-              onClick={() => setWatchMode("day")}
-              className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
-                watchMode === "day"
-                  ? "bg-amber-500 text-slate-950 font-bold shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              title="Day Nautical Mode"
-            >
-              <Sun className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Day</span>
-            </button>
+        {/* Watch Mode Selector (Day, Engine, Bridge Red) & Attribution */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/60 space-y-2.5">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1">
+              Watch Lighting Mode
+            </p>
+            <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+              <button
+                onClick={() => setWatchMode("day")}
+                className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
+                  watchMode === "day"
+                    ? "bg-amber-500 text-slate-950 font-bold shadow-xs"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="Day Nautical Mode"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span className="text-[11px]">Day</span>
+              </button>
 
-            <button
-              onClick={() => setWatchMode("engine")}
-              className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
-                watchMode === "engine"
-                  ? "bg-slate-800 text-amber-400 font-bold border border-slate-700 shadow-xs"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-              title="Engine Room Dark Mode"
-            >
-              <Moon className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Engine</span>
-            </button>
+              <button
+                onClick={() => setWatchMode("engine")}
+                className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
+                  watchMode === "engine"
+                    ? "bg-slate-800 text-amber-400 font-bold border border-slate-700 shadow-xs"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="Engine Room Dark Mode"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span className="text-[11px]">Engine</span>
+              </button>
 
-            <button
-              onClick={() => setWatchMode("bridge_night")}
-              className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
-                watchMode === "bridge_night"
-                  ? "bg-red-950 text-red-400 font-bold border border-red-800 shadow-xs"
-                  : "text-slate-400 hover:text-red-300"
-              }`}
-              title="Night Bridge Red-Vision Mode"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Bridge</span>
-            </button>
+              <button
+                onClick={() => setWatchMode("bridge_night")}
+                className={`flex items-center justify-center gap-1 py-1 rounded-md transition ${
+                  watchMode === "bridge_night"
+                    ? "bg-red-950 text-red-400 font-bold border border-red-800 shadow-xs"
+                    : "text-slate-400 hover:text-red-300"
+                }`}
+                title="Night Bridge Red-Vision Mode"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="text-[11px]">Bridge</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 px-1">
+            <span>Made by: <strong className="text-slate-200">SKYadav</strong></span>
+            <span className="text-emerald-400 font-semibold">Fully offline</span>
           </div>
         </div>
       </aside>

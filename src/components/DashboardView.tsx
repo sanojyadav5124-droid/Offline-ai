@@ -23,6 +23,9 @@ import {
   ArrowRight,
   FileCheck2,
   Filter,
+  ShieldAlert,
+  HelpCircle,
+  Download,
 } from "lucide-react";
 import {
   EquipmentKnowledgeItem,
@@ -35,6 +38,7 @@ import {
   PhotoAttachment,
 } from "../types";
 import { ActiveTab } from "./Sidebar";
+import { PWAInstallBanner } from "./PWAInstallBanner";
 
 interface DashboardViewProps {
   equipment: EquipmentKnowledgeItem[];
@@ -48,6 +52,7 @@ interface DashboardViewProps {
   onOpenAddModal: () => void;
   onOpenAiModal: () => void;
   onOpenAddEmergencyModal: () => void;
+  onOpenGuideManual?: () => void;
   onSelectPhoto: (photo: PhotoAttachment) => void;
   onSelectEquipment: (id: string) => void;
   onSelectTroubleshooting: (id: string) => void;
@@ -78,6 +83,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenAddModal,
   onOpenAiModal,
   onOpenAddEmergencyModal,
+  onOpenGuideManual,
   onSelectPhoto,
   onSelectEquipment,
   onSelectTroubleshooting,
@@ -163,14 +169,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Department Quick Filter Bar - Clutter Reducer */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* PWA Offline App Install Banner with Screen Add Button & Guide */}
+      <PWAInstallBanner onOpenGuide={onOpenGuideManual} />
+
+      {/* Department Quick Filter Bar + Guide & Manual Launch */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
           <Filter className="w-4 h-4 text-amber-500 shrink-0" />
           <span>Department Focus:</span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto">
           {DEPARTMENTS.map((dept) => {
             const isSelected = selectedDepartment === dept.id;
             return (
@@ -189,6 +198,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             );
           })}
         </div>
+
+        {/* Dedicated Guide & Manual Button accessible from Dashboard */}
+        {onOpenGuideManual && (
+          <button
+            onClick={onOpenGuideManual}
+            className="w-full lg:w-auto px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer shrink-0"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <span>Guide & Instruction Manual</span>
+          </button>
+        )}
       </div>
 
       {/* Hero / Rapid Triage Bar */}
@@ -720,6 +740,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Maritime Footer with Disclaimer & Author Attribution */}
+      <div className="mt-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <Ship className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-sm text-slate-900 dark:text-white">ANCHOR AI</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Fully offline
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Made by : <strong className="text-slate-800 dark:text-slate-200">SKYadav</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onOpenGuideManual && (
+              <button
+                onClick={onOpenGuideManual}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+                <span>Guide & Manual</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Legal Disclaimer Box */}
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed space-y-1">
+          <p className="font-semibold text-slate-700 dark:text-slate-300">
+            ⚠️ <strong>Disclaimer for the apps:</strong> The apps are built for personnel use and for reference only. Professional judgement, official source of information , company manuals, official publications and any other suitable source to be referred prior making any decision. The maker of app will have no legal liability direct or indirect on action taken by user basis the app data. Feel free to use , make copies and use the app to make your workflow at sea smooth.
+          </p>
+          <p className="italic text-amber-600 dark:text-amber-400 pt-1">
+            &ldquo;May you always have smooth seas, following winds and enough water under your keel.&rdquo;
+          </p>
         </div>
       </div>
     </div>

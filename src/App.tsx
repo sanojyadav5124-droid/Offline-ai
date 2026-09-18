@@ -38,6 +38,7 @@ import { UpdateReadingModal } from "./components/UpdateReadingModal";
 import { AIAdvisorModal } from "./components/AIAdvisorModal";
 import { PhotoViewerModal } from "./components/PhotoViewerModal";
 import { BackupModal } from "./components/BackupModal";
+import { GuideManualModal } from "./components/GuideManualModal";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
@@ -68,6 +69,7 @@ export default function App() {
   const [isAddStatutoryModalOpen, setIsAddStatutoryModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isGuideManualOpen, setIsGuideManualOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoAttachment | null>(null);
   const [editingEquipmentForReading, setEditingEquipmentForReading] = useState<EquipmentKnowledgeItem | null>(null);
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
@@ -396,6 +398,7 @@ export default function App() {
           vesselName={vesselName}
           setVesselName={setVesselName}
           onOpenAddModal={() => handleOpenAddWithPrefill()}
+          onOpenGuideManual={() => setIsGuideManualOpen(true)}
           isOpenMobile={isOpenMobile}
           setIsOpenMobile={setIsOpenMobile}
           equipmentCount={equipmentList.length}
@@ -413,6 +416,7 @@ export default function App() {
             onOpenAddModal={() => handleOpenAddWithPrefill()}
             onOpenAiModal={() => setIsAiModalOpen(true)}
             onOpenBackupModal={() => setIsBackupModalOpen(true)}
+            onOpenGuideManual={() => setIsGuideManualOpen(true)}
             setIsOpenMobile={setIsOpenMobile}
             watchMode={watchMode}
             equipmentList={equipmentList}
@@ -437,6 +441,7 @@ export default function App() {
                 onOpenAddModal={() => handleOpenAddWithPrefill()}
                 onOpenAiModal={() => setIsAiModalOpen(true)}
                 onOpenAddEmergencyModal={() => setIsAddEmergencyModalOpen(true)}
+                onOpenGuideManual={() => setIsGuideManualOpen(true)}
                 onSelectPhoto={(p) => setSelectedPhoto(p)}
                 onSelectEquipment={(id) => {
                   setTargetItemId(id);
@@ -574,6 +579,12 @@ export default function App() {
         onClose={() => setIsBackupModalOpen(false)}
         vesselName={vesselName}
         onDataReloaded={handleReloadData}
+      />
+
+      <GuideManualModal
+        isOpen={isGuideManualOpen}
+        onClose={() => setIsGuideManualOpen(false)}
+        watchMode={watchMode}
       />
     </div>
   );

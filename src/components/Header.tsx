@@ -21,6 +21,7 @@ interface HeaderProps {
   onOpenAddModal: () => void;
   onOpenAiModal: () => void;
   onOpenBackupModal: () => void;
+  onOpenGuideManual?: () => void;
   setIsOpenMobile: (open: boolean) => void;
   watchMode: WatchMode;
   equipmentList: EquipmentKnowledgeItem[];
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   onOpenAiModal,
   onOpenBackupModal,
+  onOpenGuideManual,
   setIsOpenMobile,
   watchMode,
   equipmentList,
@@ -45,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   setUserRank,
 }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -102,10 +104,25 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>100% Offline Active (Zero Latency)</span>
-          </div>
+          {/* Online / Offline Connectivity Badge */}
+          {isOnline ? (
+            <div
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold"
+              title="Online connection active. ANCHOR AI is fully offline-first."
+            >
+              <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Online</span>
+            </div>
+          ) : (
+            <div
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold"
+              title="Operating in 100% offline ocean mode with zero latency."
+            >
+              <WifiOff className="w-3.5 h-3.5 text-amber-500" />
+              <span>Offline Mode</span>
+            </div>
+          )}
         </div>
 
         {/* Global Instant Search Bar */}
@@ -233,6 +250,17 @@ export const Header: React.FC<HeaderProps> = ({
               <option value="Bosun / Deck Foreman" className="bg-slate-900 text-white">Bosun</option>
             </select>
           </div>
+
+          {onOpenGuideManual && (
+            <button
+              onClick={onOpenGuideManual}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition cursor-pointer"
+              title="Guide & Instruction Manual / Legal Disclaimer"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+              <span className="hidden xl:inline">Guide & Manual</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenAiModal}
