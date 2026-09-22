@@ -12,8 +12,18 @@ import {
   BookOpen,
   AlertTriangle,
   X,
+  UserCheck,
+  ChevronDown,
+  User,
 } from "lucide-react";
-import { EquipmentKnowledgeItem, TroubleshootingEntry, WatchMode, MaritimeDepartment } from "../types";
+import {
+  EquipmentKnowledgeItem,
+  TroubleshootingEntry,
+  WatchMode,
+  MaritimeDepartment,
+  MARITIME_RANKS,
+  SeafarerProfile,
+} from "../types";
 
 interface HeaderProps {
   searchQuery: string;
@@ -22,6 +32,7 @@ interface HeaderProps {
   onOpenAiModal: () => void;
   onOpenBackupModal: () => void;
   onOpenGuideManual?: () => void;
+  onOpenProfileModal?: () => void;
   setIsOpenMobile: (open: boolean) => void;
   watchMode: WatchMode;
   equipmentList: EquipmentKnowledgeItem[];
@@ -29,6 +40,7 @@ interface HeaderProps {
   onSelectItem: (type: "equipment" | "troubleshooting", id: string) => void;
   userRank: string;
   setUserRank: (rank: string) => void;
+  userProfile?: SeafarerProfile;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAiModal,
   onOpenBackupModal,
   onOpenGuideManual,
+  onOpenProfileModal,
   setIsOpenMobile,
   watchMode,
   equipmentList,
@@ -45,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectItem,
   userRank,
   setUserRank,
+  userProfile,
 }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -230,25 +244,55 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Officer Rank Selector */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-            <span className="text-[11px] text-slate-400 font-medium">Rank:</span>
-            <select
-              value={userRank}
-              onChange={(e) => setUserRank(e.target.value)}
-              className="bg-transparent font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+          {/* Officer Rank & Profile Control (Accessible on all screens) */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Mobile Compact Profile Pill (<sm) */}
+            <button
+              type="button"
+              onClick={onOpenProfileModal}
+              className="sm:hidden flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[11px] font-bold transition cursor-pointer"
+              title={`Active Profile: ${userRank}. Tap to change profile & rank.`}
             >
-              <option value="Chief Engineer" className="bg-slate-900 text-white">Chief Engineer</option>
-              <option value="2nd Engineer" className="bg-slate-900 text-white">2nd Engineer</option>
-              <option value="3rd Engineer" className="bg-slate-900 text-white">3rd Engineer</option>
-              <option value="4th Engineer" className="bg-slate-900 text-white">4th Engineer</option>
-              <option value="Master / Captain" className="bg-slate-900 text-white">Master / Captain</option>
-              <option value="Chief Officer" className="bg-slate-900 text-white">Chief Officer</option>
-              <option value="2nd Officer" className="bg-slate-900 text-white">2nd Officer</option>
-              <option value="3rd Officer" className="bg-slate-900 text-white">3rd Officer</option>
-              <option value="Electro-Technical Officer (ETO)" className="bg-slate-900 text-white">ETO</option>
-              <option value="Bosun / Deck Foreman" className="bg-slate-900 text-white">Bosun</option>
-            </select>
+              <UserCheck className="w-3.5 h-3.5" />
+              <span className="max-w-[70px] truncate">{userRank.split(" ")[0]}</span>
+            </button>
+
+            {/* Tablet & Desktop Rank Selector & Profile Trigger */}
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={onOpenProfileModal}
+                className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-semibold hover:underline cursor-pointer"
+                title="Open Seafarer Profile & Watch Setup"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Profile:</span>
+              </button>
+              <select
+                value={userRank}
+                onChange={(e) => setUserRank(e.target.value)}
+                className="bg-transparent font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[130px] lg:max-w-[170px] truncate"
+                title="Switch active officer rank"
+              >
+                {MARITIME_RANKS.map((group) => (
+                  <optgroup
+                    key={group.category}
+                    label={group.category}
+                    className="bg-slate-900 text-amber-400 font-bold"
+                  >
+                    {group.ranks.map((r) => (
+                      <option
+                        key={r.value}
+                        value={r.value}
+                        className="bg-slate-900 text-white font-normal"
+                      >
+                        {r.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
           </div>
 
           {onOpenGuideManual && (

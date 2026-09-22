@@ -8,6 +8,7 @@ import {
   MaritimeDepartment,
   WatchMode,
   PhotoAttachment,
+  SeafarerProfile,
 } from "./types";
 import {
   loadEquipmentItems,
@@ -21,6 +22,8 @@ import {
   loadChangeLogs,
   saveChangeLogs,
   logAuditEntry,
+  loadUserProfile,
+  saveUserProfile,
 } from "./utils/storage";
 import { Sidebar, ActiveTab } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -39,6 +42,7 @@ import { AIAdvisorModal } from "./components/AIAdvisorModal";
 import { PhotoViewerModal } from "./components/PhotoViewerModal";
 import { BackupModal } from "./components/BackupModal";
 import { GuideManualModal } from "./components/GuideManualModal";
+import { SeafarerProfileModal } from "./components/SeafarerProfileModal";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
@@ -49,9 +53,14 @@ export default function App() {
   const [vesselName, setVesselName] = useState<string>(() => {
     return localStorage.getItem("anchor_ai_vessel_name") || "M/V PACIFIC HORIZON";
   });
+
+  // Seafarer Profile & Rank Management
+  const [userProfile, setUserProfile] = useState<SeafarerProfile>(() => loadUserProfile());
   const [userRank, setUserRank] = useState<string>(() => {
-    return localStorage.getItem("anchor_ai_user_rank") || "2nd Engineer";
+    const prof = loadUserProfile();
+    return prof.rank || localStorage.getItem("anchor_ai_user_rank") || "Chief Engineer";
   });
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const [equipmentList, setEquipmentList] = useState<EquipmentKnowledgeItem[]>(loadEquipmentItems);
   const [troubleshootingList, setTroubleshootingList] = useState<TroubleshootingEntry[]>(loadTroubleshootingLogs);
@@ -86,6 +95,41 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("anchor_ai_user_rank", userRank);
   }, [userRank]);
+
+  const handleSaveProfile = (newProfile: SeafarerProfile) => {
+    setUserProfile(newProfile);
+    setUserRank(newProfile.rank);
+    saveUserProfile(newProfile);
+    localStorage.setItem("anchor_ai_user_rank", newProfile.rank);
+    logAuditEntry({
+      action: "UPDATE",
+      entityType: "Officer Profile",
+      entityId: newProfile.rank,
+      entityTitle: `${newProfile.name || "Officer"} - ${newProfile.rank}`,
+      department: newProfile.department || "Engine",
+      authorRank: newProfile.rank,
+      summary: `Active profile updated to ${newProfile.rank} (${newProfile.department || "Engine"} Dept)`,
+    });
+    setChangeLogs(loadChangeLogs());
+  };
+
+  const handleSetRank = (newRank: string) => {
+    setUserRank(newRank);
+    const updated: SeafarerProfile = { ...userProfile, rank: newRank };
+    setUserProfile(updated);
+    saveUserProfile(updated);
+    localStorage.setItem("anchor_ai_user_rank", newRank);
+    logAuditEntry({
+      action: "UPDATE",
+      entityType: "Officer Profile",
+      entityId: newRank,
+      entityTitle: newRank,
+      department: userProfile.department || "Engine",
+      authorRank: newRank,
+      summary: `Active watch officer rank changed to ${newRank}`,
+    });
+    setChangeLogs(loadChangeLogs());
+  };
 
   // Handlers for Equipment
   const handleSaveEquipment = (newItem: EquipmentKnowledgeItem) => {
@@ -399,12 +443,16 @@ export default function App() {
           setVesselName={setVesselName}
           onOpenAddModal={() => handleOpenAddWithPrefill()}
           onOpenGuideManual={() => setIsGuideManualOpen(true)}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
           isOpenMobile={isOpenMobile}
           setIsOpenMobile={setIsOpenMobile}
           equipmentCount={equipmentList.length}
           troubleshootingCount={troubleshootingList.length}
           notesCount={quickNotes.filter((n) => !n.isResolved).length}
           changeLogCount={changeLogs.length}
+          userRank={userRank}
+          setUserRank={handleSetRank}
+          userProfile={userProfile}
         />
 
         {/* Main Content Viewport */}
@@ -417,13 +465,15 @@ export default function App() {
             onOpenAiModal={() => setIsAiModalOpen(true)}
             onOpenBackupModal={() => setIsBackupModalOpen(true)}
             onOpenGuideManual={() => setIsGuideManualOpen(true)}
+            onOpenProfileModal={() => setIsProfileModalOpen(true)}
             setIsOpenMobile={setIsOpenMobile}
             watchMode={watchMode}
             equipmentList={equipmentList}
             troubleshootingList={troubleshootingList}
             onSelectItem={handleSelectItemFromSearch}
             userRank={userRank}
-            setUserRank={setUserRank}
+            setUserRank={handleSetRank}
+            userProfile={userProfile}
           />
 
           {/* Main Area Views */}
@@ -543,6 +593,7 @@ export default function App() {
         onSaveTroubleshooting={handleSaveTroubleshooting}
         existingEquipmentList={equipmentList}
         initialPrefillName={addModalPrefillName}
+        userRank={userRank}
       />
 
       <AddEmergencyModal
@@ -563,6 +614,7 @@ export default function App() {
         equipment={editingEquipmentForReading}
         onClose={() => setEditingEquipmentForReading(null)}
         onSave={handleUpdateReading}
+        userRank={userRank}
       />
 
       <AIAdvisorModal
@@ -585,6 +637,13 @@ export default function App() {
         isOpen={isGuideManualOpen}
         onClose={() => setIsGuideManualOpen(false)}
         watchMode={watchMode}
+      />
+
+      <SeafarerProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={userProfile}
+        onSaveProfile={handleSaveProfile}
       />
     </div>
   );

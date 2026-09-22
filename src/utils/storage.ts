@@ -1,4 +1,4 @@
-import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry } from "../types";
+import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry, SeafarerProfile } from "../types";
 import {
   PRESET_EQUIPMENT_ITEMS,
   PRESET_TROUBLESHOOTING_LOGS,
@@ -15,8 +15,52 @@ const STORAGE_KEYS = {
   CHANGE_LOGS: "anchor_ai_change_logs_v2",
   VESSEL_NAME: "anchor_ai_vessel_name",
   USER_RANK: "anchor_ai_user_rank",
+  USER_PROFILE: "anchor_ai_user_profile_v2",
   WATCH_MODE: "anchor_ai_watch_mode",
 };
+
+export function loadUserProfile(): SeafarerProfile {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const legacyRank = localStorage.getItem(STORAGE_KEYS.USER_RANK);
+    if (!raw) {
+      const defaultProfile: SeafarerProfile = {
+        rank: legacyRank || "Chief Engineer",
+        name: "Officer on Duty",
+        seafarerId: "CDC-IND-784291",
+        department: "Engine",
+        watchSchedule: "0800-1200 / Day Worker",
+      };
+      saveUserProfile(defaultProfile);
+      return defaultProfile;
+    }
+    const parsed: SeafarerProfile = JSON.parse(raw);
+    if (legacyRank && legacyRank !== parsed.rank) {
+      parsed.rank = legacyRank;
+    }
+    return parsed;
+  } catch (err) {
+    console.error("Error loading user profile:", err);
+    return {
+      rank: localStorage.getItem(STORAGE_KEYS.USER_RANK) || "Chief Engineer",
+      name: "Officer on Duty",
+      seafarerId: "CDC-IND-784291",
+      department: "Engine",
+      watchSchedule: "0800-1200 / Day Worker",
+    };
+  }
+}
+
+export function saveUserProfile(profile: SeafarerProfile): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    if (profile.rank) {
+      localStorage.setItem(STORAGE_KEYS.USER_RANK, profile.rank);
+    }
+  } catch (err) {
+    console.error("Error saving user profile:", err);
+  }
+}
 
 // Safe Local Storage retrieval with fallback
 export function loadEquipmentItems(): EquipmentKnowledgeItem[] {

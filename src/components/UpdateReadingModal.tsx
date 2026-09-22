@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { X, CheckCircle2, ShieldCheck, Edit2, Calendar, User } from "lucide-react";
-import { EquipmentKnowledgeItem, CurrentReading } from "../types";
+import { X, CheckCircle2, ShieldCheck, Edit2, Calendar, User, UserCheck } from "lucide-react";
+import { EquipmentKnowledgeItem, CurrentReading, MARITIME_RANKS } from "../types";
 
 interface UpdateReadingModalProps {
   equipment: EquipmentKnowledgeItem | null;
   onClose: () => void;
   onSave: (updatedEquipment: EquipmentKnowledgeItem) => void;
+  userRank?: string;
 }
 
-export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({ equipment, onClose, onSave }) => {
+export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({
+  equipment,
+  onClose,
+  onSave,
+  userRank,
+}) => {
   const [measuredValue, setMeasuredValue] = useState("");
   const [testedDate, setTestedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [testedByRank, setTestedByRank] = useState("2nd Engineer");
+  const [testedByRank, setTestedByRank] = useState(userRank || "Chief Engineer");
   const [status, setStatus] = useState<CurrentReading["status"]>("Compliant");
   const [notes, setNotes] = useState("");
 
@@ -19,11 +25,12 @@ export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({ equipmen
     if (equipment) {
       setMeasuredValue(equipment.currentReading.measuredValue || "");
       setTestedDate(equipment.currentReading.lastTestedDate || new Date().toISOString().split("T")[0]);
-      setTestedByRank(equipment.currentReading.testedByRank || "2nd Engineer");
+      // Prioritize the user's active rank when logging a live test reading
+      setTestedByRank(userRank || equipment.currentReading.testedByRank || "Chief Engineer");
       setStatus(equipment.currentReading.status || "Compliant");
       setNotes(equipment.currentReading.notes || "");
     }
-  }, [equipment]);
+  }, [equipment, userRank]);
 
   if (!equipment) return null;
 
@@ -35,7 +42,7 @@ export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({ equipmen
         ...equipment.currentReading,
         measuredValue,
         lastTestedDate: testedDate,
-        testedByRank,
+        testedByRank: testedByRank.trim() || userRank || "Chief Engineer",
         status,
         notes,
       },
@@ -122,14 +129,46 @@ export const UpdateReadingModal: React.FC<UpdateReadingModalProps> = ({ equipmen
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tested By (Rank / Name)</label>
-            <input
-              type="text"
-              value={testedByRank}
-              onChange={(e) => setTestedByRank(e.target.value)}
-              placeholder="e.g. 2nd Engineer / Chief Officer / ETO"
-              className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-bold text-slate-700 dark:text-slate-300">
+                Tested & Verified By (Rank)
+              </label>
+              {userRank && (
+                <button
+                  type="button"
+                  onClick={() => setTestedByRank(userRank)}
+                  className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                  title="Use currently active profile rank"
+                >
+                  <UserCheck className="w-3 h-3" />
+                  Use My Profile ({userRank})
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <select
+                value={testedByRank}
+                onChange={(e) => setTestedByRank(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+              >
+                {MARITIME_RANKS.map((group) => (
+                  <optgroup key={group.category} label={group.category} className="bg-slate-900 text-amber-400 font-bold">
+                    {group.ranks.map((r) => (
+                      <option key={r.value} value={r.value} className="bg-slate-900 text-white font-normal">
+                        {r.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={testedByRank}
+                onChange={(e) => setTestedByRank(e.target.value)}
+                placeholder="Or type custom rank / name..."
+                className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+              />
+            </div>
           </div>
 
           <div>

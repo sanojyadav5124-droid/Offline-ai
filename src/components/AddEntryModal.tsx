@@ -14,6 +14,7 @@ import {
   Trash2,
   Layers,
   Image as ImageIcon,
+  UserCheck,
 } from "lucide-react";
 import {
   EquipmentKnowledgeItem,
@@ -22,6 +23,7 @@ import {
   StatutoryRequirement,
   CurrentReading,
   PhotoAttachment,
+  MARITIME_RANKS,
 } from "../types";
 import { compressImageFile } from "../utils/storage";
 
@@ -34,6 +36,7 @@ interface AddEntryModalProps {
   initialPrefillName?: string;
   initialPrefillNote?: { title?: string; content?: string; department?: MaritimeDepartment; relatedEquipment?: string };
   initialMode?: "equipment" | "troubleshooting";
+  userRank?: string;
 }
 
 export const AddEntryModal: React.FC<AddEntryModalProps> = ({
@@ -45,6 +48,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   initialPrefillName,
   initialPrefillNote,
   initialMode,
+  userRank,
 }) => {
   const [entryMode, setEntryMode] = useState<"equipment" | "troubleshooting">(initialMode || "troubleshooting");
 
@@ -69,9 +73,15 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   // Current Reading (Live Emerald Section)
   const [measuredValue, setMeasuredValue] = useState("4.2 bar");
   const [testedDate, setTestedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [testedByRank, setTestedByRank] = useState("2nd Engineer");
+  const [testedByRank, setTestedByRank] = useState(userRank || "Chief Engineer");
   const [status, setStatus] = useState<CurrentReading["status"]>("Compliant");
   const [readingNotes, setReadingNotes] = useState("Nominal operating test completed with zero alarm triggers.");
+
+  useEffect(() => {
+    if (userRank) {
+      setTestedByRank(userRank);
+    }
+  }, [userRank, isOpen]);
 
   // Troubleshooting Fields
   const [symptomOrAlarm, setSymptomOrAlarm] = useState("");
@@ -214,7 +224,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
           measuredValue: measuredValue.trim() || "Nominal",
           unit: "",
           lastTestedDate: testedDate,
-          testedByRank,
+          testedByRank: testedByRank.trim() || userRank || "Chief Engineer",
           status,
           notes: readingNotes.trim() || "Nominal operating test logged.",
         },
@@ -246,7 +256,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         rootCause: cleanRoot || "Under Investigation / Pending Root Analysis",
         actionTakenAndFix: cleanAction || "Inspected and restored to normal operation.",
         sparesUsed: sparesUsed.trim() || "None recorded",
-        seafarerRank: testedByRank,
+        seafarerRank: testedByRank.trim() || userRank || "Chief Engineer",
         lessonsLearned: lessonsLearned.trim() || "Follow standard watchkeeping checklist.",
         severity,
         photos,
@@ -498,6 +508,49 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Attributed Seafarer Profile / Rank */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-amber-500" />
+                    Logged / Diagnosed By (Officer Rank)
+                  </label>
+                  {userRank && (
+                    <button
+                      type="button"
+                      onClick={() => setTestedByRank(userRank)}
+                      className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      Use Active Profile ({userRank})
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={testedByRank}
+                    onChange={(e) => setTestedByRank(e.target.value)}
+                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold"
+                  >
+                    {MARITIME_RANKS.map((group) => (
+                      <optgroup key={group.category} label={group.category} className="bg-slate-900 text-amber-400 font-bold">
+                        {group.ranks.map((r) => (
+                          <option key={r.value} value={r.value} className="bg-slate-900 text-white font-normal">
+                            {r.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={testedByRank}
+                    onChange={(e) => setTestedByRank(e.target.value)}
+                    placeholder="Or enter custom rank / name..."
+                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             /* Statutory & Maker Specs Dual Section */
@@ -603,16 +656,45 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-emerald-900 dark:text-emerald-300 mb-1">
-                      Tested By (Rank)
-                    </label>
-                    <input
-                      type="text"
-                      value={testedByRank}
-                      onChange={(e) => setTestedByRank(e.target.value)}
-                      placeholder="e.g. 2nd Engineer / Chief Officer"
-                      className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-emerald-400/40 text-slate-900 dark:text-white"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-emerald-900 dark:text-emerald-300">
+                        Tested By (Rank)
+                      </label>
+                      {userRank && (
+                        <button
+                          type="button"
+                          onClick={() => setTestedByRank(userRank)}
+                          className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <UserCheck className="w-3 h-3" />
+                          My Profile ({userRank})
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <select
+                        value={testedByRank}
+                        onChange={(e) => setTestedByRank(e.target.value)}
+                        className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-emerald-400/40 text-slate-900 dark:text-white text-xs font-semibold"
+                      >
+                        {MARITIME_RANKS.map((group) => (
+                          <optgroup key={group.category} label={group.category} className="bg-slate-900 text-amber-400 font-bold">
+                            {group.ranks.map((r) => (
+                              <option key={r.value} value={r.value} className="bg-slate-900 text-white font-normal">
+                                {r.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={testedByRank}
+                        onChange={(e) => setTestedByRank(e.target.value)}
+                        placeholder="Or type custom rank..."
+                        className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-emerald-400/40 text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -17,8 +17,9 @@ import {
   Zap,
   StickyNote,
   History,
+  UserCheck,
 } from "lucide-react";
-import { MaritimeDepartment, WatchMode } from "../types";
+import { MaritimeDepartment, WatchMode, SeafarerProfile } from "../types";
 
 export type ActiveTab =
   | "dashboard"
@@ -42,12 +43,16 @@ interface SidebarProps {
   setVesselName: (name: string) => void;
   onOpenAddModal: () => void;
   onOpenGuideManual?: () => void;
+  onOpenProfileModal?: () => void;
   isOpenMobile: boolean;
   setIsOpenMobile: (open: boolean) => void;
   equipmentCount: number;
   troubleshootingCount: number;
   notesCount: number;
   changeLogCount: number;
+  userRank: string;
+  setUserRank?: (rank: string) => void;
+  userProfile?: SeafarerProfile;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -61,12 +66,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setVesselName,
   onOpenAddModal,
   onOpenGuideManual,
+  onOpenProfileModal,
   isOpenMobile,
   setIsOpenMobile,
   equipmentCount,
   troubleshootingCount,
   notesCount,
   changeLogCount,
+  userRank,
+  setUserRank,
+  userProfile,
 }) => {
   const departments: { id: MaritimeDepartment | "All"; label: string; icon: string }[] = [
     { id: "All", label: "All Departments", icon: "🌐" },
@@ -142,6 +151,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
+          </div>
+
+          {/* Active Seafarer Profile Card */}
+          <div className="mt-2 p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-amber-500/30 flex items-center justify-between transition">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <UserCheck className="w-4 h-4" />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-[10px] uppercase font-bold text-amber-400/90 tracking-wider">
+                  Logged In As
+                </p>
+                <p className="text-xs font-bold text-white truncate" title={userRank}>
+                  {userRank}
+                </p>
+              </div>
+            </div>
+            {onOpenProfileModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenProfileModal();
+                  setIsOpenMobile(false);
+                }}
+                className="px-2 py-1 text-[11px] font-bold rounded-md bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition cursor-pointer shrink-0"
+                title="Change Rank / Edit Seafarer Profile"
+              >
+                Switch
+              </button>
+            )}
           </div>
         </div>
 
