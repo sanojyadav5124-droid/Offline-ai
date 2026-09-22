@@ -34,7 +34,7 @@ async function startServer() {
     const hasKey = Boolean(process.env.GEMINI_API_KEY);
     res.json({
       status: "ok",
-      mode: "Blueprint Maritime Hub",
+      mode: "AnchorAI Maritime Hub",
       onlineAiAvailable: hasKey,
       timestamp: new Date().toISOString(),
     });
@@ -53,7 +53,7 @@ async function startServer() {
         });
       }
 
-      const systemInstruction = `You are "Blueprint Maritime Technical Advisor", a senior Chief Engineer and Master Mariner consulting assistant for seafarers at sea.
+      const systemInstruction = `You are "AnchorAI Maritime Technical Advisor", a senior Chief Engineer and Master Mariner consulting assistant for seafarers at sea.
 Your job is to provide direct, safety-critical, highly actionable, concise technical procedures, troubleshooting steps, and statutory compliance checks according to IMO (SOLAS, MARPOL, STCW, MLC) and standard Class/Maker practices (MAN, Wärtsilä, Yanmar, Alfa Laval, Furuno, etc.).
 
 Always structure your responses clearly:
@@ -108,7 +108,7 @@ Request: ${prompt}`;
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Blueprint Maritime Vault server running on http://0.0.0.0:${PORT}`);
+    console.log(`AnchorAI Maritime Vault server running on http://0.0.0.0:${PORT}`);
   });
 }
 

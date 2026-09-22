@@ -777,12 +777,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Legal Disclaimer Box */}
-        <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed space-y-1">
-          <p className="font-semibold text-slate-700 dark:text-slate-300">
-            ⚠️ <strong>Disclaimer for the apps:</strong> The apps are built for personnel use and for reference only. Professional judgement, official source of information , company manuals, official publications and any other suitable source to be referred prior making any decision. The maker of app will have no legal liability direct or indirect on action taken by user basis the app data. Feel free to use , make copies and use the app to make your workflow at sea smooth.
-          </p>
-          <p className="italic text-amber-600 dark:text-amber-400 pt-1">
-            &ldquo;May you always have smooth seas, following winds and enough water under your keel.&rdquo;
+        <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-3 pt-2">
+          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-xs">
+            <span className="text-amber-500">⚠️</span>
+            <span className="uppercase tracking-wider">Disclaimer & Terms of Use</span>
+          </div>
+
+          <div>
+            <span className="font-bold text-slate-800 dark:text-slate-200">For Reference Only: </span>
+            <span>This app is for personal use and general reference only. It is not a substitute for official maritime resources.</span>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Data Accuracy & Verification:</span>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-500 dark:text-slate-400 pl-1 text-[11px]">
+              <li><strong className="text-slate-700 dark:text-slate-300">No Warranties:</strong> Data is provided &quot;as is.&quot; It may be incomplete, outdated, or contain errors.</li>
+              <li><strong className="text-slate-700 dark:text-slate-300">Mandatory Check:</strong> Always verify data against official publications, company manuals, and statutory regulations before making navigational or operational decisions.</li>
+              <li><strong className="text-slate-700 dark:text-slate-300">Seamanship:</strong> Never substitute this app for professional judgment and standard safe seamanship.</li>
+            </ul>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Limitation of Liability:</span>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-500 dark:text-slate-400 pl-1 text-[11px]">
+              <li><strong className="text-slate-700 dark:text-slate-300">No Liability:</strong> The developer accepts no legal liability (direct or indirect) for any loss, damage, injury, or mishap resulting from the use of this app.</li>
+              <li><strong className="text-slate-700 dark:text-slate-300">User Risk:</strong> You use this application entirely at your own risk.</li>
+            </ul>
+          </div>
+
+          <div className="space-y-1">
+            <span className="font-bold text-slate-800 dark:text-slate-200 block">Permitted Use & Feedback:</span>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-500 dark:text-slate-400 pl-1 text-[11px]">
+              <li><strong className="text-slate-700 dark:text-slate-300">Usage:</strong> Feel free to use and copy this app to make your workflow at sea smoother.</li>
+              <li><strong className="text-slate-700 dark:text-slate-300">Feedback:</strong> Please send your improvements and suggestions via email - <a href="mailto:sanojyadav14@gmail.com" className="text-sky-600 dark:text-sky-400 hover:underline font-mono">sanojyadav14@gmail.com</a></li>
+            </ul>
+          </div>
+
+          <p className="italic font-serif text-amber-600 dark:text-amber-400 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
+            &ldquo;May you always have smooth seas, following winds, and enough water under your keel.&rdquo;
           </p>
         </div>
       </div>

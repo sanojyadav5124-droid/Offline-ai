@@ -81,6 +81,7 @@ export default function App() {
   const [isGuideManualOpen, setIsGuideManualOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoAttachment | null>(null);
   const [editingEquipmentForReading, setEditingEquipmentForReading] = useState<EquipmentKnowledgeItem | null>(null);
+  const [editingEquipment, setEditingEquipment] = useState<EquipmentKnowledgeItem | null>(null);
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
 
   // Persist vessel settings
@@ -165,6 +166,26 @@ export default function App() {
       summary: `Logged test reading: ${updated.currentReading.measuredValue} (Status: ${updated.currentReading.status})`,
     });
     setChangeLogs(loadChangeLogs());
+  };
+
+  const handleDeleteEquipment = (equipmentId: string) => {
+    const target = equipmentList.find((e) => e.id === equipmentId);
+    const updated = equipmentList.filter((e) => e.id !== equipmentId);
+    setEquipmentList(updated);
+    saveEquipmentItems(updated);
+
+    if (target) {
+      logAuditEntry({
+        action: "DELETE",
+        entityType: "Equipment Machinery",
+        entityId: equipmentId,
+        entityTitle: target.equipmentName,
+        department: target.department,
+        authorRank: userRank,
+        summary: `Deleted machinery & statutory vault specs: "${target.equipmentName}" (${target.maker})`,
+      });
+      setChangeLogs(loadChangeLogs());
+    }
   };
 
   // Handlers for Troubleshooting
@@ -530,6 +551,11 @@ export default function App() {
                 onOpenAddModal={handleOpenAddWithPrefill}
                 onSelectPhoto={(p) => setSelectedPhoto(p)}
                 onUpdateReading={(eq) => setEditingEquipmentForReading(eq)}
+                onEditEquipment={(eq) => {
+                  setEditingEquipment(eq);
+                  setIsAddModalOpen(true);
+                }}
+                onDeleteEquipment={handleDeleteEquipment}
                 watchMode={watchMode}
                 targetEquipmentId={targetItemId}
               />
@@ -588,11 +614,13 @@ export default function App() {
         onClose={() => {
           setIsAddModalOpen(false);
           setAddModalPrefillName(undefined);
+          setEditingEquipment(null);
         }}
         onSaveEquipment={handleSaveEquipment}
         onSaveTroubleshooting={handleSaveTroubleshooting}
         existingEquipmentList={equipmentList}
         initialPrefillName={addModalPrefillName}
+        initialEquipmentToEdit={editingEquipment}
         userRank={userRank}
       />
 

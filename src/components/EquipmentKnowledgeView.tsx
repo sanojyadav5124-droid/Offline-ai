@@ -1,22 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Search,
-  Filter,
   Plus,
   ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  Clock,
   Camera,
   Wrench,
   ChevronDown,
   ChevronUp,
-  Tag,
   Edit2,
-  ExternalLink,
   Sliders,
-  Layers,
+  Trash2,
 } from "lucide-react";
 import {
   EquipmentKnowledgeItem,
@@ -26,12 +22,29 @@ import {
   WatchMode,
 } from "../types";
 
+export const VAULT_DEPARTMENTS: {
+  id: MaritimeDepartment | "All";
+  label: string;
+  icon: string;
+  color: string;
+  badgeClass: string;
+}[] = [
+  { id: "All", label: "All Departments", icon: "🌐", color: "bg-slate-800 text-slate-200", badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30" },
+  { id: "Engine", label: "Engine Room", icon: "⚙️", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300", badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" },
+  { id: "Deck", label: "Deck & Bridge", icon: "🧭", color: "bg-blue-500/20 text-blue-700 dark:text-blue-300", badgeClass: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30" },
+  { id: "Electrical", label: "Electrical / ETO", icon: "⚡", color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300", badgeClass: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" },
+  { id: "Safety_ISM", label: "Safety / ISM", icon: "🛡️", color: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300", badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" },
+  { id: "Cargo", label: "Cargo Operations", icon: "📦", color: "bg-purple-500/20 text-purple-700 dark:text-purple-300", badgeClass: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30" },
+];
+
 interface EquipmentKnowledgeViewProps {
   equipmentList: EquipmentKnowledgeItem[];
   troubleshootingList: TroubleshootingEntry[];
   selectedDepartment: MaritimeDepartment | "All";
   setSelectedDepartment: (dept: MaritimeDepartment | "All") => void;
   onOpenAddModal: (prefillEquipmentName?: string) => void;
+  onEditEquipment: (equipment: EquipmentKnowledgeItem) => void;
+  onDeleteEquipment: (equipmentId: string) => void;
   onSelectPhoto: (photo: PhotoAttachment) => void;
   onUpdateReading: (equipment: EquipmentKnowledgeItem) => void;
   watchMode: WatchMode;
@@ -44,22 +57,38 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
   selectedDepartment,
   setSelectedDepartment,
   onOpenAddModal,
+  onEditEquipment,
+  onDeleteEquipment,
   onSelectPhoto,
   onUpdateReading,
   watchMode,
   targetEquipmentId,
 }) => {
   const [search, setSearch] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(targetEquipmentId || null);
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>(() => {
+    if (targetEquipmentId) {
+      return { [targetEquipmentId]: true };
+    }
+    return {};
+  });
+  const [itemToDelete, setItemToDelete] = useState<EquipmentKnowledgeItem | null>(null);
 
-  const departments: (MaritimeDepartment | "All")[] = [
-    "All",
-    "Engine",
-    "Deck",
-    "Electrical",
-    "Safety_ISM",
-    "Cargo",
-  ];
+  useEffect(() => {
+    if (targetEquipmentId) {
+      setExpandedIds((prev) => ({ ...prev, [targetEquipmentId]: true }));
+      const el = document.getElementById(`eq-${targetEquipmentId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [targetEquipmentId]);
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   const filtered = equipmentList.filter((eq) => {
     const matchesDept = selectedDepartment === "All" || eq.department === selectedDepartment;
@@ -100,19 +129,21 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-        {/* Department Chips */}
+        {/* Department Chips with matching Dashboard symbols */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none">
-          {departments.map((dept) => (
+          {VAULT_DEPARTMENTS.map((dept) => (
             <button
-              key={dept}
-              onClick={() => setSelectedDepartment(dept)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                selectedDepartment === dept
-                  ? "bg-amber-500 text-slate-950 shadow-xs"
+              key={dept.id}
+              type="button"
+              onClick={() => setSelectedDepartment(dept.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                selectedDepartment === dept.id
+                  ? "bg-amber-500 text-slate-950 shadow-xs font-bold"
                   : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
-              {dept === "All" ? "All Departments" : dept.replace("_", " / ")}
+              <span>{dept.icon}</span>
+              <span>{dept.label}</span>
             </button>
           ))}
         </div>
@@ -140,12 +171,21 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
           </div>
         ) : (
           filtered.map((item) => {
-            const isExpanded = expandedId === item.id;
+            const isExpanded = !!expandedIds[item.id];
             const linkedLogs = troubleshootingList.filter(
               (t) =>
                 t.equipmentId === item.id ||
                 t.equipmentName.toLowerCase().includes(item.equipmentName.toLowerCase())
             );
+
+            // Match exact department symbol and color style from dashboard
+            const deptInfo = VAULT_DEPARTMENTS.find((d) => d.id === item.department) || {
+              id: item.department,
+              label: item.department,
+              icon: "⚙️",
+              color: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+              badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+            };
 
             return (
               <div
@@ -158,15 +198,24 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                 }`}
               >
                 {/* Header Row */}
-                <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+                <div
+                  onClick={() => toggleExpand(item.id)}
+                  className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-100/60 dark:hover:bg-slate-900/60 transition"
+                >
                   <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
-                      <Layers className="w-5 h-5" />
+                    {/* Dedicated Department Symbol Box matching Dashboard */}
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 mt-0.5 border ${deptInfo.badgeClass} shadow-xs`}
+                      title={`${deptInfo.label} Department`}
+                    >
+                      <span>{deptInfo.icon}</span>
                     </div>
+
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {item.department}
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border flex items-center gap-1 ${deptInfo.badgeClass}`}>
+                          <span>{deptInfo.icon}</span>
+                          <span>{deptInfo.label}</span>
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                           📍 {item.area}
@@ -189,30 +238,77 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                   </div>
 
                   {/* Actions & Expand Toggle */}
-                  <div className="flex items-center gap-2 self-end md:self-center">
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex flex-wrap items-center gap-2 self-end md:self-center"
+                  >
+                    {/* Log Reading */}
                     <button
+                      type="button"
                       onClick={() => onUpdateReading(item)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      title="Log a new test reading / verification"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                       <span>Log Reading</span>
                     </button>
 
+                    {/* Log Incident */}
                     <button
+                      type="button"
                       onClick={() => onOpenAddModal(item.equipmentName)}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                       title="Log a breakdown experience for this machinery"
                     >
                       <Wrench className="w-3.5 h-3.5" />
                       <span>Log Incident</span>
                     </button>
 
+                    {/* Edit Specifications & Regulatory Standards */}
                     <button
-                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                      className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition"
-                      aria-label="Toggle details"
+                      type="button"
+                      onClick={() => onEditEquipment(item)}
+                      className="px-2.5 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      title="Edit specifications, maker parameters, or statutory regulatory standards"
                     >
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span>Edit Specs</span>
+                    </button>
+
+                    {/* Delete Technical Record */}
+                    <button
+                      type="button"
+                      onClick={() => setItemToDelete(item)}
+                      className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                      title="Delete this technical vault entry"
+                      aria-label="Delete equipment record"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Fixed & Fully Working Details / Specs Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(item.id)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        isExpanded
+                          ? "bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-400 dark:border-slate-600 shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      }`}
+                      aria-expanded={isExpanded}
+                      title={isExpanded ? "Collapse machinery details" : "Expand maker specs, spares, photos & breakdown logs"}
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5 text-amber-500 stroke-[2.5]" />
+                          <span>Hide Specs</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-500 stroke-[2.5]" />
+                          <span>View Specs</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -368,10 +464,11 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                           <Camera className="w-3.5 h-3.5 text-sky-400" /> Attached Photos, Nameplates & Schematics
                         </h4>
                         <button
-                          onClick={() => onOpenAddModal(item.equipmentName)}
-                          className="text-[11px] font-bold text-amber-500 hover:underline flex items-center gap-1"
+                          type="button"
+                          onClick={() => onEditEquipment(item)}
+                          className="text-[11px] font-bold text-amber-500 hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <Plus className="w-3 h-3" /> Add Image
+                          <Plus className="w-3 h-3" /> Manage Photos
                         </button>
                       </div>
 
@@ -426,6 +523,37 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* Technical Vault Management Footer */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEditEquipment(item)}
+                          className="px-3 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-700 dark:text-sky-300 border border-sky-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sliders className="w-3.5 h-3.5" />
+                          <span>Edit Full Technical & Regulatory Specs</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateReading(item)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Log Verification Reading</span>
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setItemToDelete(item)}
+                        className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Entry</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -433,6 +561,55 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
           })
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Machinery Record?</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">This action will remove the technical vault record.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-900 dark:text-rose-200 space-y-1">
+              <p className="font-bold">{itemToDelete.equipmentName} ({itemToDelete.maker} {itemToDelete.model})</p>
+              <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80">
+                Regulatory Code: {itemToDelete.statutoryRequirement.regulationCode} • Area: {itemToDelete.area}
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to delete this technical vault entry? The deletion will be logged in the vessel change log audit trail.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteEquipment(itemToDelete.id);
+                  setItemToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Confirm Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

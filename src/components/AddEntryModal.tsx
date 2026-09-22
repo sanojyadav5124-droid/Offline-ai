@@ -36,6 +36,7 @@ interface AddEntryModalProps {
   initialPrefillName?: string;
   initialPrefillNote?: { title?: string; content?: string; department?: MaritimeDepartment; relatedEquipment?: string };
   initialMode?: "equipment" | "troubleshooting";
+  initialEquipmentToEdit?: EquipmentKnowledgeItem | null;
   userRank?: string;
 }
 
@@ -48,9 +49,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   initialPrefillName,
   initialPrefillNote,
   initialMode,
+  initialEquipmentToEdit,
   userRank,
 }) => {
-  const [entryMode, setEntryMode] = useState<"equipment" | "troubleshooting">(initialMode || "troubleshooting");
+  const [entryMode, setEntryMode] = useState<"equipment" | "troubleshooting">(
+    initialEquipmentToEdit ? "equipment" : initialMode || "troubleshooting"
+  );
 
   // Common Fields
   const [department, setDepartment] = useState<MaritimeDepartment>("Engine");
@@ -98,10 +102,35 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
-    if (initialMode) {
+    if (initialEquipmentToEdit) {
+      setEntryMode("equipment");
+      setDepartment(initialEquipmentToEdit.department);
+      setArea(initialEquipmentToEdit.area);
+      setEquipmentName(initialEquipmentToEdit.equipmentName);
+      setMaker(initialEquipmentToEdit.maker);
+      setModel(initialEquipmentToEdit.model);
+      setInstalledLocation(initialEquipmentToEdit.installedLocation || "");
+      setRegCode(initialEquipmentToEdit.statutoryRequirement.regulationCode);
+      setGovBody(initialEquipmentToEdit.statutoryRequirement.governingBody);
+      setStatLimit(initialEquipmentToEdit.statutoryRequirement.statutoryLimitValue);
+      setStatSummary(initialEquipmentToEdit.statutoryRequirement.requirementSummary);
+      setTestInterval(initialEquipmentToEdit.statutoryRequirement.testInterval);
+      setTolerance(initialEquipmentToEdit.statutoryRequirement.standardTolerance);
+      setMeasuredValue(initialEquipmentToEdit.currentReading.measuredValue);
+      setTestedDate(initialEquipmentToEdit.currentReading.lastTestedDate);
+      setTestedByRank(initialEquipmentToEdit.currentReading.testedByRank);
+      setStatus(initialEquipmentToEdit.currentReading.status);
+      setReadingNotes(initialEquipmentToEdit.currentReading.notes || initialEquipmentToEdit.quickNotes || "");
+      setPhotos(initialEquipmentToEdit.photos || []);
+      setSparesUsed(initialEquipmentToEdit.criticalSparesOnboard.join(", "));
+    }
+  }, [initialEquipmentToEdit, isOpen]);
+
+  useEffect(() => {
+    if (initialMode && !initialEquipmentToEdit) {
       setEntryMode(initialMode);
     }
-  }, [initialMode]);
+  }, [initialMode, initialEquipmentToEdit]);
 
   useEffect(() => {
     if (initialPrefillNote) {
@@ -204,15 +233,15 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
       const finalEqName = cleanEqName || `${maker.trim() || "Auxiliary"} ${model.trim() || "Machinery Unit"}`.trim() || "Marine Auxiliary Machinery";
 
       const newEq: EquipmentKnowledgeItem = {
-        id: `eq-${Date.now()}`,
+        id: initialEquipmentToEdit?.id || `eq-${Date.now()}`,
         department,
         area: area.trim() || "Machinery Space",
         equipmentName: finalEqName,
-        maker: maker.trim() || "Standard Marine Maker",
-        model: model.trim() || "Standard Model",
-        installedLocation: installedLocation.trim() || "Main Engine Room",
+        maker: maker.trim() || (initialEquipmentToEdit ? initialEquipmentToEdit.maker : "Standard Marine Maker"),
+        model: model.trim() || (initialEquipmentToEdit ? initialEquipmentToEdit.model : "Standard Model"),
+        installedLocation: installedLocation.trim() || (initialEquipmentToEdit ? initialEquipmentToEdit.installedLocation : "Main Engine Room"),
         statutoryRequirement: {
-          id: `stat-${Date.now()}`,
+          id: initialEquipmentToEdit?.statutoryRequirement?.id || `stat-${Date.now()}`,
           regulationCode: regCode.trim() || "SOLAS II-1 Reg 41",
           governingBody: govBody,
           requirementSummary: statSummary.trim() || "Standard classification requirement for continuous power & reliability.",
@@ -228,11 +257,15 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
           status,
           notes: readingNotes.trim() || "Nominal operating test logged.",
         },
-        makerDesignSpecs: [
-          { label: "Nominal Operating Band", nominalValue: statLimit.trim() || "Nominal", alarmLimit: "Deviation Alert" },
-        ],
-        quickNotes: readingNotes.trim() || "Operational record.",
-        criticalSparesOnboard: sparesUsed.trim() ? [sparesUsed.trim()] : [],
+        makerDesignSpecs: initialEquipmentToEdit?.makerDesignSpecs && initialEquipmentToEdit.makerDesignSpecs.length > 0
+          ? initialEquipmentToEdit.makerDesignSpecs
+          : [
+              { label: "Nominal Operating Band", nominalValue: statLimit.trim() || "Nominal", alarmLimit: "Deviation Alert" },
+            ],
+        quickNotes: readingNotes.trim() || (initialEquipmentToEdit ? initialEquipmentToEdit.quickNotes : "Operational record."),
+        criticalSparesOnboard: sparesUsed.trim()
+          ? sparesUsed.split(",").map((s) => s.trim()).filter(Boolean)
+          : initialEquipmentToEdit?.criticalSparesOnboard || [],
         photos,
         updatedAt: new Date().toISOString(),
       };
@@ -280,8 +313,14 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base sm:text-lg">Log Maritime Reference & Experience</h3>
-              <p className="text-xs text-slate-400">Auto-populates known parameters for instant onboard entry</p>
+              <h3 className="font-bold text-base sm:text-lg">
+                {initialEquipmentToEdit ? "Edit Machinery Specs & Statutory Standards" : "Log Maritime Reference & Experience"}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {initialEquipmentToEdit
+                  ? "Update maker parameters, safe bands, or statutory regulations to reflect new IMO/Class rules"
+                  : "Auto-populates known parameters for instant onboard entry"}
+              </p>
             </div>
           </div>
           <button
@@ -292,40 +331,42 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
           </button>
         </div>
 
-        {/* Entry Mode Toggle Tabs */}
-        <div className="p-3 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setEntryMode("troubleshooting");
-              setValidationError("");
-            }}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
-              entryMode === "troubleshooting"
-                ? "bg-amber-500 text-slate-950 shadow-xs"
-                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-            }`}
-          >
-            <Wrench className="w-4 h-4" />
-            <span>1. Breakdown Experience & Fix Log</span>
-          </button>
+        {/* Entry Mode Toggle Tabs (Only shown when not editing a specific equipment item) */}
+        {!initialEquipmentToEdit && (
+          <div className="p-3 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEntryMode("troubleshooting");
+                setValidationError("");
+              }}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+                entryMode === "troubleshooting"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              <span>1. Breakdown Experience & Fix Log</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setEntryMode("equipment");
-              setValidationError("");
-            }}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
-              entryMode === "equipment"
-                ? "bg-amber-500 text-slate-950 shadow-xs"
-                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>2. Machinery Specs & Statutory Rule</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEntryMode("equipment");
+                setValidationError("");
+              }}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+                entryMode === "equipment"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>2. Machinery Specs & Statutory Rule</span>
+            </button>
+          </div>
+        )}
 
         {validationError && (
           <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
@@ -777,8 +818,17 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
               type="submit"
               className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Save Entry to Local Vault</span>
+              {initialEquipmentToEdit ? (
+                <>
+                  <Sliders className="w-4 h-4 stroke-[2.5]" />
+                  <span>Update Technical & Statutory Specs</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Save Entry to Local Vault</span>
+                </>
+              )}
             </button>
           </div>
         </form>

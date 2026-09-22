@@ -132,7 +132,7 @@ Matched against ${equipmentList.length} onboard machinery systems and ${troubles
 1. **Safety First:** Identify any statutory alarms (SOLAS / MARPOL) and log initial parameters before adjusting controls.
 2. **Isolate Symptoms vs Causes:** Check sensors and gauge calibrations before dismantling heavy mechanical assemblies.
 3. **Review Past Handover Logs:** Similar issues recorded on your vessel often share identical root causes (e.g. filter fouling, water in fuel, or loose electrical terminals).
-4. **Record Findings:** Document the final fix and spares consumed in Blueprint's **Breakdown Experience Log** for your shipmates.`;
+4. **Record Findings:** Document the final fix and spares consumed in AnchorAI's **Breakdown Experience Log** for your shipmates.`;
   };
 
   const handleConsult = async (e: React.FormEvent) => {

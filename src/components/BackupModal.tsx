@@ -38,7 +38,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     const link = document.createElement("a");
     const dateStr = new Date().toISOString().split("T")[0];
     link.href = url;
-    link.download = `blueprint_maritime_vault_${vesselName.replace(/\s+/g, "_")}_${dateStr}.json`;
+    link.download = `anchor_ai_maritime_vault_${vesselName.replace(/\s+/g, "_")}_${dateStr}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };

@@ -559,21 +559,62 @@ export const GuideManualModal: React.FC<GuideManualModalProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/20 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed space-y-3 font-medium">
-                  <p>
-                    The apps are built for personnel use and for reference only.
-                  </p>
-                  <p>
-                    Professional judgement, official source of information , company manuals, official publications and any other suitable source to be referred prior making any decision.
-                  </p>
-                  <p>
-                    The maker of app will have no legal liability direct or indirect on action taken by user basis the app data.
-                  </p>
-                  <p>
-                    Feel free to use , make copies and use the app to make your workflow at sea smooth.
-                  </p>
-                  <p className="font-bold text-amber-600 dark:text-amber-400 italic pt-2 border-t border-slate-200 dark:border-slate-800">
-                    &ldquo;May you always have smooth seas, following winds and enough water under your keel.&rdquo;
+                <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/20 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed space-y-4 font-medium">
+                  <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <h5 className="font-bold text-slate-900 dark:text-white text-sm">For Reference Only</h5>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1">
+                      This app is for personal use and general reference only. It is not a substitute for official maritime resources.
+                    </p>
+                  </div>
+
+                  <div className="border-b border-slate-200 dark:border-slate-800 pb-3 space-y-2">
+                    <h5 className="font-bold text-slate-900 dark:text-white text-sm">Data Accuracy & Verification</h5>
+                    <ul className="space-y-1.5 text-slate-600 dark:text-slate-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">No Warranties:</strong> Data is provided &quot;as is.&quot; It may be incomplete, outdated, or contain errors.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">Mandatory Check:</strong> Always verify data against official publications, company manuals, and statutory regulations before making navigational or operational decisions.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">Seamanship:</strong> Never substitute this app for professional judgment and standard safe seamanship.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="border-b border-slate-200 dark:border-slate-800 pb-3 space-y-2">
+                    <h5 className="font-bold text-slate-900 dark:text-white text-sm">Limitation of Liability</h5>
+                    <ul className="space-y-1.5 text-slate-600 dark:text-slate-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">No Liability:</strong> The developer accepts no legal liability (direct or indirect) for any loss, damage, injury, or mishap resulting from the use of this app.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">User Risk:</strong> You use this application entirely at your own risk.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2 pb-2">
+                    <h5 className="font-bold text-slate-900 dark:text-white text-sm">Permitted Use & Feedback</h5>
+                    <ul className="space-y-1.5 text-slate-600 dark:text-slate-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">Usage:</strong> Feel free to use and copy this app to make your workflow at sea smoother.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong className="text-slate-900 dark:text-white">Feedback:</strong> Please send your improvements and suggestions via email - <a href="mailto:sanojyadav14@gmail.com" className="text-sky-600 dark:text-sky-400 hover:underline font-mono font-semibold">sanojyadav14@gmail.com</a></span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <p className="font-bold text-amber-600 dark:text-amber-400 italic pt-3 border-t border-slate-200 dark:border-slate-800 text-center font-serif text-sm">
+                    &ldquo;May you always have smooth seas, following winds, and enough water under your keel.&rdquo;
                   </p>
                 </div>
 
