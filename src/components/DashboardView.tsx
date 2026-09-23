@@ -262,9 +262,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Ambient watermark */}
-        <div className="absolute -right-8 -bottom-10 opacity-5 pointer-events-none">
-          <Ship className="w-72 h-72 text-white" />
+        {/* Ambient AnchorAI Emblem Badge */}
+        <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 opacity-25 hover:opacity-40 transition-opacity hidden md:block pointer-events-none">
+          <img
+            src="/logo.png"
+            alt="AnchorAI Official Seal"
+            className="w-44 h-44 object-contain rounded-full shadow-2xl border-2 border-amber-400/30"
+          />
         </div>
       </div>
 

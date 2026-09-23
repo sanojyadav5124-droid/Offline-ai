@@ -119,8 +119,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-5 border-b border-slate-800/80 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
-                <Anchor className="w-6 h-6 stroke-[2.5]" />
+              <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 shadow-md shadow-amber-500/10 border border-slate-700 bg-slate-950 flex items-center justify-center">
+                <img
+                  src="/logo.png"
+                  alt="AnchorAI Logo"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to anchor icon if image fails to render
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <Anchor className="w-5 h-5 text-amber-500 absolute stroke-[2.5] pointer-events-none -z-10" />
               </div>
               <div>
                 <h1 className="font-black text-lg tracking-tight flex items-center gap-1.5 text-white">

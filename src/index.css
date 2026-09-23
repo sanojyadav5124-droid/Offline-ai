@@ -1,1 +1,73 @@
 @import "tailwindcss";
+
+@layer utilities {
+  @media print {
+    @page {
+      margin: 10mm 12mm 12mm 12mm;
+      size: portrait;
+    }
+
+    html,
+    body,
+    #root {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      font-size: 10pt !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      height: auto !important;
+      min-height: auto !important;
+      overflow: visible !important;
+    }
+
+    /* Hide standard navigation, sidebar, filter bars, action buttons */
+    aside,
+    nav,
+    .no-print,
+    .print\:hidden {
+      display: none !important;
+    }
+
+    /* Show print-only elements */
+    .print-only,
+    .print\:block {
+      display: block !important;
+    }
+
+    .print\:flex {
+      display: flex !important;
+    }
+
+    /* Remove scroll wrappers and fix layout */
+    main {
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .print-container {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      box-shadow: none !important;
+    }
+
+    .print-avoid-break {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    /* Crisp ink-friendly borders */
+    .print-border {
+      border-color: #94a3b8 !important;
+    }
+
+    .print-bg-light {
+      background-color: #f8fafc !important;
+    }
+  }
+}
