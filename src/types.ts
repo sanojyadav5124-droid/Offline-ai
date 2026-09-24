@@ -205,3 +205,76 @@ export interface MaritimeQueryResponse {
   statutoryRules: string[];
   recommendedSpares: string[];
 }
+
+export interface SimulationTelemetryItem {
+  label: string;
+  value: string;
+  unit?: string;
+  status: "normal" | "warning" | "danger";
+}
+
+export interface SimulationOption {
+  id: string;
+  actionText: string;
+  isCorrect: boolean;
+  scoreDelta: number;
+  feedback: string;
+  consequenceNarrative: string;
+  statutoryCitation?: string;
+}
+
+export interface SimulationStage {
+  id: string;
+  stageIndex: number;
+  stageTitle: string;
+  scenarioUpdate: string;
+  telemetryUpdates?: SimulationTelemetryItem[];
+  questionOrActionPrompt: string;
+  options: SimulationOption[];
+}
+
+export interface SimulationScenario {
+  id: string;
+  title: string;
+  code: string;
+  category: "Engine Room" | "Cargo & Tanker" | "Bridge & Navigation" | "SOLAS Safety & Life Saving" | "Electrical & Blackout";
+  department: MaritimeDepartment;
+  statutoryRef: string;
+  timeLimitSeconds: number;
+  difficulty: "Standard" | "Intermediate" | "High Stakes";
+  systemEquipment: string;
+  initialCondition: {
+    vesselSituation: string;
+    alarmMessage: string;
+    initialNarrative: string;
+    telemetry: SimulationTelemetryItem[];
+  };
+  stages: SimulationStage[];
+  debriefingNotes: {
+    keyTakeaway: string;
+    solasMarpolMandate: string;
+    vettingChecklistQuestion: string;
+    recommendedDrillFrequency: string;
+  };
+}
+
+export interface CompletedDrillRecord {
+  id: string;
+  scenarioId: string;
+  scenarioTitle: string;
+  category: string;
+  department: MaritimeDepartment;
+  completedAt: string;
+  officerRank: string;
+  officerName?: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  passed: boolean;
+  durationSeconds: number;
+  timeLimitSeconds: number;
+  mistakesCount: number;
+  statutoryRef: string;
+  remarks: string;
+}
+

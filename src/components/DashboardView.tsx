@@ -63,8 +63,6 @@ interface DashboardViewProps {
   onConvertToLog: (note: QuickNote) => void;
   watchMode: WatchMode;
   userRank: string;
-  setUserRank?: (rank: string) => void;
-  userProfile?: SeafarerProfile;
 }
 
 const DEPARTMENTS: { id: MaritimeDepartment | "All"; label: string; icon: string; color: string }[] = [
@@ -97,8 +95,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onConvertToLog,
   watchMode,
   userRank,
-  setUserRank,
-  userProfile,
 }) => {
   const [triageInput, setTriageInput] = useState("");
   const [fastNoteText, setFastNoteText] = useState("");
@@ -180,70 +176,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* PWA Offline App Install Banner with Screen Add Button & Guide */}
       <PWAInstallBanner onOpenGuide={onOpenGuideManual} />
 
-      {/* Prominent Active Officer on Watch & Rank Selector (Captain Shown by Default) */}
-      <div className="bg-linear-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Interactive Single-Failure & Drill Simulator Quick Launch Hero */}
+      <div className="bg-linear-to-r from-slate-900 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 text-white">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
-            <span>⚓</span>
+            <span>⚡</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Active Watch Officer
+                Interactive Training Engine
               </span>
               <span className="text-xs text-slate-400">
-                {userProfile?.department ? `${userProfile.department} Department` : "Deck Command"}
+                SOLAS • MARPOL • FSS Code • SIRE 2.0
               </span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-white mt-0.5 flex items-center gap-2">
-              <span>{userRank}</span>
-              {userProfile?.name && <span className="text-sm font-medium text-slate-300">({userProfile.name})</span>}
+            <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
+              Single-Failure & Emergency Drill Simulator
             </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Practice real-time blackout recovery, IGS O2 spikes, steering failures, and enclosed space rescue drills.
+            </p>
           </div>
         </div>
 
-        {/* Quick Rank Switcher Dropdown & Common Quick Chips */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs shadow-xs">
-            <span className="text-slate-400 font-medium">Switch Rank:</span>
-            {setUserRank && (
-              <select
-                value={userRank}
-                onChange={(e) => setUserRank(e.target.value)}
-                className="bg-transparent font-bold text-amber-400 focus:outline-none cursor-pointer"
-                title="Select active seafarer rank"
-              >
-                {MARITIME_RANKS.map((group) => (
-                  <optgroup
-                    key={group.category}
-                    label={group.category}
-                    className="bg-slate-900 text-amber-400 font-bold"
-                  >
-                    {group.ranks.map((r) => (
-                      <option
-                        key={r.value}
-                        value={r.value}
-                        className="bg-slate-900 text-white font-normal"
-                      >
-                        {r.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {onOpenProfileModal && (
-            <button
-              onClick={onOpenProfileModal}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
-              title="Edit Seafarer Profile & CDC Number"
-            >
-              <span>Edit Profile</span>
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => setActiveTab("simulation")}
+          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer self-start md:self-center shrink-0"
+        >
+          <span>Launch Drill Simulator</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Department Quick Filter Bar + Guide & Manual Launch */}

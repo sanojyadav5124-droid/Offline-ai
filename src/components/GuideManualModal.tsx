@@ -26,6 +26,9 @@ import {
   ArrowRight,
   ExternalLink,
   LifeBuoy,
+  Sliders,
+  Gauge,
+  Award,
 } from "lucide-react";
 import { WatchMode } from "../types";
 
@@ -215,6 +218,16 @@ export const GuideManualModal: React.FC<GuideManualModalProps> = ({
                       Rapid memo pinning for watchkeepers during rounds, with 1-click conversion into permanent technical incident records for seamless handover.
                     </p>
                   </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1.5 md:col-span-2">
+                    <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Single-Failure & Emergency Drill Simulation Engine</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Interactive real-time emergency training engine with live telemetry HUD, countdown escalation timers, and procedural decision trees covering Blackouts, IGS spikes, Steering failures, Enclosed space rescues, and SIRE 2.0 vetting audit debriefs.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -261,6 +274,7 @@ export const GuideManualModal: React.FC<GuideManualModalProps> = ({
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {[
                     { id: "dashboard", label: "Dashboard & Triage" },
+                    { id: "simulation", label: "⚡ Drill & Failure Simulator" },
                     { id: "notes", label: "Watch Scratchpad" },
                     { id: "equipment", label: "Machinery Specs" },
                     { id: "troubleshooting", label: "Breakdown Fixes" },
@@ -307,6 +321,64 @@ export const GuideManualModal: React.FC<GuideManualModalProps> = ({
                       <strong className="text-slate-900 dark:text-white block mb-1">3. Fast Scratchpad Input:</strong>
                       Quickly type an observation (e.g., <em>"Boiler burner nozzle fouled during port stay"</em>) and press <strong>Pin Memo</strong>. It pins immediately to the active watch board.
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTabSubnav === "simulation" && (
+                <div className="space-y-4">
+                  <h4 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span>Single-Failure & Emergency Drill Simulation Engine</span>
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
+                    An interactive training and scenario simulation workspace designed for merchant officers to practice split-second decision making during catastrophic machinery failures, blackouts, cargo overpressures, and life-saving drills under SOLAS, MARPOL, FSS Code, and OCIMF SIRE 2.0 standards.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                      <strong className="text-slate-900 dark:text-white flex items-center gap-1.5 font-bold">
+                        <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+                        <span>1. Statutory Scenario Catalog:</span>
+                      </strong>
+                      <p>
+                        Choose from a library of pre-configured scenarios spanning all shipboard departments: <em>Dead-bus blackout in TSS</em>, <em>IGS delivery O2 spike during crude discharge</em>, <em>Main engine scavenge fire slowdown</em>, <em>Steering gear hydraulic loss</em>, <em>Pump room enclosed space rescue</em>, and <em>Totally enclosed lifeboat air exhaustion</em>.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                      <strong className="text-slate-900 dark:text-white flex items-center gap-1.5 font-bold">
+                        <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                        <span>2. Vault Equipment Single-Failure Injector:</span>
+                      </strong>
+                      <p>
+                        Select any of the 25 statutory equipment items from your vault (or click <strong>"Inject Random Failure"</strong>) to immediately simulate sudden sensor drift, alarm trips, or mechanical breakdown against maker nominal design limits.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                      <strong className="text-slate-900 dark:text-white flex items-center gap-1.5 font-bold">
+                        <Gauge className="w-3.5 h-3.5 text-sky-500" />
+                        <span>3. Live Dynamic Telemetry HUD:</span>
+                      </strong>
+                      <p>
+                        Real-time gauges show live values (O2 %, voltage, exhaust temp, rudder angles, ppm). When you make decisions, telemetry responds dynamically (e.g. O2 falls after FD damper lubrication, or temperature cools after steam smothering).
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                      <strong className="text-slate-900 dark:text-white flex items-center gap-1.5 font-bold">
+                        <Award className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>4. SIRE 2.0 Debriefing & Drill Ledger:</span>
+                      </strong>
+                      <p>
+                        Upon drill completion, a comprehensive debriefing report is generated with your score, duration, procedural mistakes count, SOLAS citations, and exact OCIMF SIRE 2.0 vetting questions. Completed drills are logged in the persistent vessel audit trail with 1-click print support.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-900 dark:text-amber-300">
+                    <strong>Watchkeeping Safety Note:</strong> Never bypass safety cutouts during active sea voyages. Use this simulator regularly during calm passages or port stays to maintain sharp emergency instincts across all ranks from Cadet to Master and Chief Engineer.
                   </div>
                 </div>
               )}

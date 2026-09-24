@@ -23,6 +23,7 @@ import { MaritimeDepartment, WatchMode, SeafarerProfile } from "../types";
 
 export type ActiveTab =
   | "dashboard"
+  | "simulation"
   | "notes"
   | "equipment"
   | "troubleshooting"
@@ -225,6 +226,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Anchor className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="flex-1 text-left">Dashboard & Triage</span>
+              </button>
+
+              <button
+                onClick={() => handleNavClick("simulation")}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition ${
+                  activeTab === "simulation"
+                    ? "bg-amber-500/15 text-amber-300 font-semibold border-l-3 border-amber-500"
+                    : "text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-left">Drill & Failure Simulator</span>
+                </div>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 uppercase">
+                  SIM
+                </span>
               </button>
 
               <button

@@ -43,6 +43,7 @@ import { PhotoViewerModal } from "./components/PhotoViewerModal";
 import { BackupModal } from "./components/BackupModal";
 import { GuideManualModal } from "./components/GuideManualModal";
 import { SeafarerProfileModal } from "./components/SeafarerProfileModal";
+import { SimulationEngineView } from "./components/SimulationEngineView";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
@@ -527,8 +528,22 @@ export default function App() {
                 onConvertToLog={handleConvertToLog}
                 watchMode={watchMode}
                 userRank={userRank}
-                setUserRank={handleSetRank}
+              />
+            )}
+
+            {activeTab === "simulation" && (
+              <SimulationEngineView
+                watchMode={watchMode}
+                userRank={userRank}
                 userProfile={userProfile}
+                vesselName={vesselName}
+                equipmentList={equipmentList}
+                selectedDepartment={selectedDepartment}
+                onSwitchDepartment={(dept) => setSelectedDepartment(dept)}
+                onOpenEquipmentVault={(id) => {
+                  if (id) setTargetItemId(id);
+                  setActiveTab("equipment");
+                }}
               />
             )}
 

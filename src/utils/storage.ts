@@ -1,4 +1,4 @@
-import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry, SeafarerProfile } from "../types";
+import { EquipmentKnowledgeItem, TroubleshootingEntry, EmergencyChecklist, QuickNote, ChangeLogEntry, SeafarerProfile, CompletedDrillRecord } from "../types";
 import {
   PRESET_EQUIPMENT_ITEMS,
   PRESET_TROUBLESHOOTING_LOGS,
@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   USER_RANK: "anchor_ai_user_rank",
   USER_PROFILE: "anchor_ai_user_profile_v2",
   WATCH_MODE: "anchor_ai_watch_mode",
+  COMPLETED_DRILLS: "anchor_ai_completed_drills_v2",
 };
 
 export function loadUserProfile(): SeafarerProfile {
@@ -331,3 +332,24 @@ export function importMaritimeVaultJSON(jsonString: string): { success: boolean;
     return { success: false, message: `Import failed: ${err.message}`, count: 0 };
   }
 }
+
+export function loadCompletedDrills(): CompletedDrillRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.COMPLETED_DRILLS);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("Error loading completed drills:", err);
+    return [];
+  }
+}
+
+export function saveCompletedDrills(drills: CompletedDrillRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.COMPLETED_DRILLS, JSON.stringify(drills));
+  } catch (err) {
+    console.error("Error saving completed drills:", err);
+  }
+}
+
