@@ -44,6 +44,7 @@ import { BackupModal } from "./components/BackupModal";
 import { GuideManualModal } from "./components/GuideManualModal";
 import { SeafarerProfileModal } from "./components/SeafarerProfileModal";
 import { SimulationEngineView } from "./components/SimulationEngineView";
+import { DocumentIngestionScannerModal } from "./components/DocumentIngestionScannerModal";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
@@ -80,6 +81,7 @@ export default function App() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isGuideManualOpen, setIsGuideManualOpen] = useState(false);
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoAttachment | null>(null);
   const [editingEquipmentForReading, setEditingEquipmentForReading] = useState<EquipmentKnowledgeItem | null>(null);
   const [editingEquipment, setEditingEquipment] = useState<EquipmentKnowledgeItem | null>(null);
@@ -488,6 +490,7 @@ export default function App() {
             onOpenBackupModal={() => setIsBackupModalOpen(true)}
             onOpenGuideManual={() => setIsGuideManualOpen(true)}
             onOpenProfileModal={() => setIsProfileModalOpen(true)}
+            onOpenScannerModal={() => setIsScannerModalOpen(true)}
             setIsOpenMobile={setIsOpenMobile}
             watchMode={watchMode}
             equipmentList={equipmentList}
@@ -690,6 +693,27 @@ export default function App() {
         onClose={() => setIsProfileModalOpen(false)}
         profile={userProfile}
         onSaveProfile={handleSaveProfile}
+      />
+
+      <DocumentIngestionScannerModal
+        isOpen={isScannerModalOpen}
+        onClose={() => setIsScannerModalOpen(false)}
+        onSaveEquipment={handleSaveEquipment}
+        onSaveTroubleshooting={(item) => {
+          const updated = [item, ...troubleshootingList];
+          setTroubleshootingList(updated);
+          saveTroubleshootingLogs(updated);
+          logAuditEntry({
+            action: "CREATE",
+            entityType: "Troubleshooting Incident",
+            entityTitle: item.symptomOrAlarm,
+            department: item.department,
+            authorRank: userRank,
+            summary: "Generated via Smart Doc & Excel Scanner",
+          });
+          setChangeLogs(loadChangeLogs());
+        }}
+        equipmentList={equipmentList}
       />
     </div>
   );
