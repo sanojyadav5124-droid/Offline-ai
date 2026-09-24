@@ -25,11 +25,11 @@ export function loadUserProfile(): SeafarerProfile {
     const legacyRank = localStorage.getItem(STORAGE_KEYS.USER_RANK);
     if (!raw) {
       const defaultProfile: SeafarerProfile = {
-        rank: legacyRank || "Chief Engineer",
-        name: "Officer on Duty",
-        seafarerId: "CDC-IND-784291",
-        department: "Engine",
-        watchSchedule: "0800-1200 / Day Worker",
+        rank: legacyRank || "Master / Captain",
+        name: "Capt. S. K. Yadav",
+        seafarerId: "CDC-MST-99120",
+        department: "Deck",
+        watchSchedule: "Command & Overall Navigation Safety",
       };
       saveUserProfile(defaultProfile);
       return defaultProfile;
@@ -42,11 +42,11 @@ export function loadUserProfile(): SeafarerProfile {
   } catch (err) {
     console.error("Error loading user profile:", err);
     return {
-      rank: localStorage.getItem(STORAGE_KEYS.USER_RANK) || "Chief Engineer",
-      name: "Officer on Duty",
-      seafarerId: "CDC-IND-784291",
-      department: "Engine",
-      watchSchedule: "0800-1200 / Day Worker",
+      rank: localStorage.getItem(STORAGE_KEYS.USER_RANK) || "Master / Captain",
+      name: "Capt. S. K. Yadav",
+      seafarerId: "CDC-MST-99120",
+      department: "Deck",
+      watchSchedule: "Command & Overall Navigation Safety",
     };
   }
 }
@@ -62,7 +62,7 @@ export function saveUserProfile(profile: SeafarerProfile): void {
   }
 }
 
-// Safe Local Storage retrieval with fallback
+// Safe Local Storage retrieval with fallback and auto-sync of statutory matrix
 export function loadEquipmentItems(): EquipmentKnowledgeItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.EQUIPMENT);
@@ -71,7 +71,33 @@ export function loadEquipmentItems(): EquipmentKnowledgeItem[] {
       return PRESET_EQUIPMENT_ITEMS;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : PRESET_EQUIPMENT_ITEMS;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure all 25 statutory equipment presets are merged into the vault while retaining custom user items
+      const existingMap = new Map(parsed.map((item: EquipmentKnowledgeItem) => [item.id, item]));
+      let needsSave = false;
+      const merged = [...parsed];
+
+      for (const preset of PRESET_EQUIPMENT_ITEMS) {
+        if (!existingMap.has(preset.id)) {
+          merged.push(preset);
+          needsSave = true;
+        } else {
+          // Update preset statutory details to ensure latest convention alignment
+          const idx = merged.findIndex((m) => m.id === preset.id);
+          if (idx !== -1 && merged[idx].statutoryRequirement.regulationCode !== preset.statutoryRequirement.regulationCode) {
+            merged[idx] = { ...preset, currentReading: merged[idx].currentReading || preset.currentReading };
+            needsSave = true;
+          }
+        }
+      }
+
+      if (needsSave) {
+        saveEquipmentItems(merged);
+      }
+      return merged;
+    }
+    saveEquipmentItems(PRESET_EQUIPMENT_ITEMS);
+    return PRESET_EQUIPMENT_ITEMS;
   } catch (err) {
     console.error("Error loading equipment from storage:", err);
     return PRESET_EQUIPMENT_ITEMS;

@@ -29,6 +29,20 @@ export const MARITIME_RANKS: {
   ranks: MaritimeRankDefinition[];
 }[] = [
   {
+    category: "Command & Deck Department (Navigational Bridge)",
+    department: "Deck",
+    ranks: [
+      { value: "Master / Captain", label: "Master / Captain (Capt.)", department: "Deck", code: "MST", description: "Commanding Officer, Safe Navigation & Overall Ship Operations" },
+      { value: "Chief Officer", label: "Chief Officer / Chief Mate (C/O)", department: "Deck", code: "CO", description: "Cargo Operations, Stability, Deck Maintenance & Safety" },
+      { value: "2nd Officer", label: "2nd Officer / Nav Officer (2/O)", department: "Deck", code: "2O", description: "Navigational Passage Planning, Charts & Bridge Equipment" },
+      { value: "3rd Officer", label: "3rd Officer / Safety Officer (3/O)", department: "Deck", code: "3O", description: "Bridge Watchkeeping, LSA/FFA Maintenance & Inspections" },
+      { value: "Bosun / Deck Foreman", label: "Bosun / Deck Foreman", department: "Deck", code: "BSN", description: "Deck Ratings Supervisor, Mooring Gear & Rigging" },
+      { value: "Able Seaman (AB)", label: "Able Seaman (AB)", department: "Deck", code: "AB", description: "Helmsman, Lookout, Mooring Operations & Deck Maintenance" },
+      { value: "Ordinary Seaman (OS)", label: "Ordinary Seaman (OS)", department: "Deck", code: "OS", description: "General Deck Duties, Rust Removal & Chipping" },
+      { value: "Deck Cadet", label: "Deck Cadet / Trainee", department: "Deck", code: "DC", description: "Trainee Navigating Officer under supervision" },
+    ],
+  },
+  {
     category: "Engine Department Officers & Crew",
     department: "Engine",
     ranks: [
@@ -39,20 +53,6 @@ export const MARITIME_RANKS: {
       { value: "Engine Fitter / Turner", label: "Engine Fitter / Turner", department: "Engine", code: "FIT", description: "Machining, Lathe Fabrication, Pipefitting & Overhauls" },
       { value: "Motorman / Oiler", label: "Motorman / Oiler", department: "Engine", code: "MM", description: "Watchkeeping Rounds, Lubrication & Engine Room Housekeeping" },
       { value: "Engine Cadet", label: "Engine Cadet / Trainee", department: "Engine", code: "EC", description: "Trainee Engineer Officer under supervision" },
-    ],
-  },
-  {
-    category: "Deck Department Officers & Crew",
-    department: "Deck",
-    ranks: [
-      { value: "Master / Captain", label: "Master / Captain (Capt.)", department: "Deck", code: "MST", description: "Commanding Officer, Safe Navigation & Ship Operations" },
-      { value: "Chief Officer", label: "Chief Officer / Chief Mate (C/O)", department: "Deck", code: "CO", description: "Cargo Operations, Stability, Deck Maintenance & Safety" },
-      { value: "2nd Officer", label: "2nd Officer / Nav Officer (2/O)", department: "Deck", code: "2O", description: "Navigational Passage Planning, Charts & Bridge Equipment" },
-      { value: "3rd Officer", label: "3rd Officer / Safety Officer (3/O)", department: "Deck", code: "3O", description: "Bridge Watchkeeping, LSA/FFA Maintenance & Inspections" },
-      { value: "Bosun / Deck Foreman", label: "Bosun / Deck Foreman", department: "Deck", code: "BSN", description: "Deck Ratings Supervisor, Mooring Gear & Rigging" },
-      { value: "Able Seaman (AB)", label: "Able Seaman (AB)", department: "Deck", code: "AB", description: "Helmsman, Lookout, Mooring Operations & Deck Maintenance" },
-      { value: "Ordinary Seaman (OS)", label: "Ordinary Seaman (OS)", department: "Deck", code: "OS", description: "General Deck Duties, Rust Removal & Chipping" },
-      { value: "Deck Cadet", label: "Deck Cadet / Trainee", department: "Deck", code: "DC", description: "Trainee Navigating Officer under supervision" },
     ],
   },
   {

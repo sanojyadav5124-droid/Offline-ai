@@ -58,7 +58,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<SeafarerProfile>(() => loadUserProfile());
   const [userRank, setUserRank] = useState<string>(() => {
     const prof = loadUserProfile();
-    return prof.rank || localStorage.getItem("anchor_ai_user_rank") || "Chief Engineer";
+    return prof.rank || localStorage.getItem("anchor_ai_user_rank") || "Master / Captain";
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -513,6 +513,7 @@ export default function App() {
                 onOpenAiModal={() => setIsAiModalOpen(true)}
                 onOpenAddEmergencyModal={() => setIsAddEmergencyModalOpen(true)}
                 onOpenGuideManual={() => setIsGuideManualOpen(true)}
+                onOpenProfileModal={() => setIsProfileModalOpen(true)}
                 onSelectPhoto={(p) => setSelectedPhoto(p)}
                 onSelectEquipment={(id) => {
                   setTargetItemId(id);
@@ -526,6 +527,8 @@ export default function App() {
                 onConvertToLog={handleConvertToLog}
                 watchMode={watchMode}
                 userRank={userRank}
+                setUserRank={handleSetRank}
+                userProfile={userProfile}
               />
             )}
 
