@@ -335,88 +335,135 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                   </div>
                 </div>
 
-                {/* Core Dual-Color Statutory vs Live Reading Section */}
-                <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Amber Section: Statutory Law & International Code Requirements */}
-                  <div className="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-xs flex flex-col justify-between space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
-                        <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
-                          <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>Pre-filled Requirement by Law</span>
-                        </div>
-                        <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                {/* Collapsed Concise Preview Strip when not expanded */}
+                {!isExpanded && (
+                  <div
+                    onClick={() => toggleExpand(item.id)}
+                    className="px-4 py-2.5 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-slate-100 dark:border-slate-800/80 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Rule:</span>
+                        <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
                           {item.statutoryRequirement.regulationCode}
                         </span>
                       </div>
 
-                      <div className="my-2.5">
-                        <div className="text-[11px] uppercase tracking-wider text-amber-900/70 dark:text-amber-300/70 font-bold">
-                          Statutory Standard / Tolerance Limit
-                        </div>
-                        <div className="text-base sm:text-lg font-black text-amber-900 dark:text-amber-200 my-0.5">
+                      <div className="hidden sm:flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                        <span>Limit:</span>
+                        <strong className="text-slate-800 dark:text-slate-200">
                           {item.statutoryRequirement.statutoryLimitValue}
-                        </div>
-                        <p className="text-xs text-amber-950/80 dark:text-amber-100/80 leading-relaxed">
-                          {item.statutoryRequirement.requirementSummary}
-                        </p>
+                        </strong>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px] text-amber-900/80 dark:text-amber-300/80">
-                      <span>
-                        <strong>Tolerance:</strong> {item.statutoryRequirement.standardTolerance}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
+                          item.currentReading.status === "Compliant"
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
+                            : "bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30"
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>{item.currentReading.status}</span>
+                        <span className="font-mono text-slate-600 dark:text-slate-300">({item.currentReading.measuredValue})</span>
                       </span>
-                      <span className="font-semibold px-2 py-0.5 rounded bg-amber-500/20">
-                        {item.statutoryRequirement.testInterval} Test
+
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5 ml-1">
+                        <span>View Full Specs</span>
+                        <ChevronDown className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   </div>
+                )}
 
-                  {/* Emerald Section: Current Live Onboard Vessel Readings */}
-                  <div className="p-4 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30 text-xs flex flex-col justify-between space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
-                        <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>Current Onboard Vessel Record</span>
-                        </div>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            item.currentReading.status === "Compliant"
-                              ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border border-emerald-500/30"
-                              : "bg-rose-500/20 text-rose-800 dark:text-rose-200 border border-rose-500/30"
-                          }`}
-                        >
-                          {item.currentReading.status}
-                        </span>
-                      </div>
-
-                      <div className="my-2.5">
-                        <div className="text-[11px] uppercase tracking-wider text-emerald-900/70 dark:text-emerald-300/70 font-bold">
-                          Last Measured Value / Test Result
-                        </div>
-                        <div className="text-base sm:text-lg font-black text-emerald-900 dark:text-emerald-200 my-0.5">
-                          {item.currentReading.measuredValue}
-                        </div>
-                        <p className="text-xs text-emerald-950/80 dark:text-emerald-100/80 leading-relaxed">
-                          {item.currentReading.notes || "Logged and verified within nominal tolerances."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px] text-emerald-900/80 dark:text-emerald-300/80">
-                      <span>
-                        <strong>Tested:</strong> {item.currentReading.lastTestedDate}
-                      </span>
-                      <span className="font-semibold">By: {item.currentReading.testedByRank}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expanded Details: Maker Specs, Spares, Photos, and Linked Incidents */}
+                {/* Expanded Full Specifications Dossier */}
                 {isExpanded && (
-                  <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-5 animate-in slide-in-from-top-2">
+                  <div className="space-y-0 animate-in fade-in duration-200">
+                    {/* Core Dual-Color Statutory vs Live Reading Section */}
+                    <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Amber Section: Statutory Law & International Code Requirements */}
+                      <div className="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-xs flex flex-col justify-between space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
+                            <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span>Pre-filled Requirement by Law</span>
+                            </div>
+                            <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                              {item.statutoryRequirement.regulationCode}
+                            </span>
+                          </div>
+
+                          <div className="my-2.5">
+                            <div className="text-[11px] uppercase tracking-wider text-amber-900/70 dark:text-amber-300/70 font-bold">
+                              Statutory Standard / Tolerance Limit
+                            </div>
+                            <div className="text-base sm:text-lg font-black text-amber-900 dark:text-amber-200 my-0.5">
+                              {item.statutoryRequirement.statutoryLimitValue}
+                            </div>
+                            <p className="text-xs text-amber-950/80 dark:text-amber-100/80 leading-relaxed">
+                              {item.statutoryRequirement.requirementSummary}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px] text-amber-900/80 dark:text-amber-300/80">
+                          <span>
+                            <strong>Tolerance:</strong> {item.statutoryRequirement.standardTolerance}
+                          </span>
+                          <span className="font-semibold px-2 py-0.5 rounded bg-amber-500/20">
+                            {item.statutoryRequirement.testInterval} Test
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Emerald Section: Current Live Onboard Vessel Readings */}
+                      <div className="p-4 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30 text-xs flex flex-col justify-between space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
+                            <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>Current Onboard Vessel Record</span>
+                            </div>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                item.currentReading.status === "Compliant"
+                                  ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border border-emerald-500/30"
+                                  : "bg-rose-500/20 text-rose-800 dark:text-rose-200 border border-rose-500/30"
+                              }`}
+                            >
+                              {item.currentReading.status}
+                            </span>
+                          </div>
+
+                          <div className="my-2.5">
+                            <div className="text-[11px] uppercase tracking-wider text-emerald-900/70 dark:text-emerald-300/70 font-bold">
+                              Last Measured Value / Test Result
+                            </div>
+                            <div className="text-base sm:text-lg font-black text-emerald-900 dark:text-emerald-200 my-0.5">
+                              {item.currentReading.measuredValue}
+                            </div>
+                            <p className="text-xs text-emerald-950/80 dark:text-emerald-100/80 leading-relaxed">
+                              {item.currentReading.notes || "Logged and verified within nominal tolerances."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px] text-emerald-900/80 dark:text-emerald-300/80">
+                          <span>
+                            <strong>Tested:</strong> {item.currentReading.lastTestedDate}
+                          </span>
+                          <span className="font-semibold">By: {item.currentReading.testedByRank}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Specs: Maker Parameters, Guidance, Spares, Photos & Linked Incidents */}
+                    <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-5">
                     {/* Maker Specs Table */}
                     {item.makerDesignSpecs.length > 0 && (
                       <div>
@@ -576,6 +623,7 @@ export const EquipmentKnowledgeView: React.FC<EquipmentKnowledgeViewProps> = ({
                         <span>Delete Entry</span>
                       </button>
                     </div>
+                  </div>
                   </div>
                 )}
               </div>
