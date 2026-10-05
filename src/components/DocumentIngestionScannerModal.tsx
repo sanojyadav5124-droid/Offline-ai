@@ -28,6 +28,11 @@ import {
   ShieldCheck,
   Tag,
   Cpu,
+  StopCircle,
+  Minimize2,
+  HardDriveDownload,
+  Gauge,
+  SlidersHorizontal,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import * as pdfjsLib from "pdfjs-dist";
@@ -45,6 +50,15 @@ import {
   MaritimeTaxonomyItem,
   TaxonomyMatchResult,
 } from "../data/maritimeTaxonomy";
+import {
+  compressImageOffline,
+  CompressionResult,
+} from "../utils/imageCompressor";
+import {
+  processPDFDocumentAsync,
+  PDFScanProgress,
+  PDFScanResult,
+} from "../utils/pdfProcessorPipeline";
 
 // Safe PDF.js worker setup
 try {
@@ -80,6 +94,15 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>("");
   const [parseSuccessMessage, setParseSuccessMessage] = useState<string | null>(null);
+
+  // PDF Asynchronous Pipeline & Progress states
+  const [pdfProgress, setPdfProgress] = useState<PDFScanProgress | null>(null);
+  const [pdfMaxPages, setPdfMaxPages] = useState<number>(25);
+  const pdfAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Offline Image Compression stats
+  const [compressionMetrics, setCompressionMetrics] = useState<CompressionResult | null>(null);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
 
   // Taxonomy vocabulary filter UI drawer state
   const [showTaxonomyBrowser, setShowTaxonomyBrowser] = useState(false);
@@ -157,6 +180,9 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     }
     return () => {
       stopCamera();
+      if (pdfAbortControllerRef.current) {
+        pdfAbortControllerRef.current.abort();
+      }
     };
   }, [isOpen, activeMode, facingMode]);
 
@@ -186,21 +212,15 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     }
   };
 
-  // Pre-process canvas for high-accuracy OCR (Grayscale & Contrast Boost)
-  const preprocessImage = (canvas: HTMLCanvasElement) => {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const avg = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
-      const contrast = (avg - 128) * 1.4 + 128;
-      const finalVal = Math.min(255, Math.max(0, contrast));
-      d[i] = finalVal;
-      d[i + 1] = finalVal;
-      d[i + 2] = finalVal;
+  // Cancel running PDF scan pipeline
+  const handleCancelPDFScan = () => {
+    if (pdfAbortControllerRef.current) {
+      pdfAbortControllerRef.current.abort();
+      pdfAbortControllerRef.current = null;
     }
-    ctx.putImageData(imgData, 0, 0);
+    setIsProcessing(false);
+    setProcessingStatus("PDF scan cancelled by user.");
+    setPdfProgress(null);
   };
 
   // Run Real Client-Side OCR with static vocabulary post-processing
@@ -233,8 +253,8 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     }
   };
 
-  // Shutter action on Live Camera
-  const handleCaptureSnapshot = () => {
+  // Shutter action on Live Camera with automatic offline compression
+  const handleCaptureSnapshot = async () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
@@ -243,41 +263,59 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const photoDataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      setCapturedPhotoUrl(photoDataUrl);
-      preprocessImage(canvas);
-      runRealOCR(canvas);
+      const rawDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+      setIsCompressingImage(true);
+      try {
+        // Compress snapshot offline before storage and OCR
+        const comp = await compressImageOffline(rawDataUrl, {
+          maxWidthOrHeight: 1280,
+          initialQuality: 0.78,
+          useWebWorker: true,
+        });
+        setCapturedPhotoUrl(comp.dataUrl);
+        setCompressionMetrics(comp);
+        runRealOCR(comp.dataUrl);
+      } catch {
+        setCapturedPhotoUrl(rawDataUrl);
+        runRealOCR(canvas);
+      } finally {
+        setIsCompressingImage(false);
+      }
     }
   };
 
-  // Direct Image / Photo File Upload Handler
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Direct Image / Photo File Upload Handler with instant offline compression
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const dataUrl = evt.target?.result as string;
-      setCapturedPhotoUrl(dataUrl);
-      
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          preprocessImage(canvas);
-          runRealOCR(canvas);
-        }
+    setIsCompressingImage(true);
+    setProcessingStatus("Optimizing and compressing photo offline...");
+    try {
+      const comp = await compressImageOffline(file, {
+        maxWidthOrHeight: 1280,
+        initialQuality: 0.78,
+        useWebWorker: true,
+      });
+      setCapturedPhotoUrl(comp.dataUrl);
+      setCompressionMetrics(comp);
+      runRealOCR(comp.dataUrl);
+    } catch (err: any) {
+      console.warn("Direct image compression error, fallback:", err);
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const dataUrl = evt.target?.result as string;
+        setCapturedPhotoUrl(dataUrl);
+        runRealOCR(dataUrl);
       };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    } finally {
+      setIsCompressingImage(false);
+    }
   };
 
-  // PDF & Excel Spreadsheet Upload Handler with Fast Timeout Safety
+  // Asynchronous Non-Blocking PDF & Excel Ingestion Pipeline
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -286,6 +324,7 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     setInsufficientDataError(null);
     setExtractedData(null);
     setParseSuccessMessage(null);
+    setPdfProgress(null);
     setProcessingStatus(`Analyzing ${file.name}...`);
 
     const fileName = file.name.toLowerCase();
@@ -313,44 +352,42 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
       };
       reader.readAsArrayBuffer(file);
     } else if (fileName.endsWith(".pdf")) {
+      // Non-blocking Asynchronous PDF Pipeline
       try {
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
-            setProcessingStatus("Loading PDF Document Stream...");
-            const typedArray = new Uint8Array(evt.target?.result as ArrayBuffer);
-            
-            // Safe timeout: don't let huge 200 page manuals freeze UI
-            const pdfDocPromise = pdfjsLib.getDocument({ data: typedArray }).promise;
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("PDF load timeout (over 8s).")), 8000)
-            );
+            const arrayBuffer = evt.target?.result as ArrayBuffer;
+            const abortController = new AbortController();
+            pdfAbortControllerRef.current = abortController;
 
-            const pdfDoc: any = await Promise.race([pdfDocPromise, timeoutPromise]);
-            const maxPagesToScan = Math.min(pdfDoc.numPages, 15);
-            let fullText = "";
+            const result: PDFScanResult = await processPDFDocumentAsync(arrayBuffer, {
+              maxPagesToScan: pdfMaxPages,
+              earlyExitConfidence: 60,
+              signal: abortController.signal,
+              onProgress: (prog) => {
+                setPdfProgress(prog);
+                setProcessingStatus(prog.statusText);
+              },
+            });
 
-            for (let i = 1; i <= maxPagesToScan; i++) {
-              setProcessingStatus(`Extracting Technical Specs from Page ${i} of ${maxPagesToScan}...`);
-              const page = await pdfDoc.getPage(i);
-              const textContent = await page.getTextContent();
-              const pageText = textContent.items.map((item: any) => item.str).join(" ");
-              fullText += `[Page ${i}] ${pageText}\n`;
+            pdfAbortControllerRef.current = null;
+            setRawText(result.fullExtractedText);
 
-              // Early exit if high-confidence match is detected
-              if (fullText.length > 400) {
-                const testMatch = matchMaritimeTaxonomy(fullText);
-                if (testMatch.confidenceScore >= 50) {
-                  break;
-                }
-              }
+            if (result.taxonomyResult.matchedTaxonomy || result.taxonomyResult.detectedAbbreviations.length > 0) {
+              applyExtractedTaxonomy(result.taxonomyResult);
+            } else {
+              parseContentWithTaxonomy(result.fullExtractedText);
             }
-
-            setRawText(fullText);
-            parseContentWithTaxonomy(fullText);
           } catch (pdfErr: any) {
-            console.warn("PDF extraction fallback:", pdfErr);
-            setInsufficientDataError(`PDF scan notice: ${pdfErr.message}. If the PDF is image-only, please take a snapshot with the camera scanner.`);
+            if (pdfErr.name === "AbortError") {
+              setInsufficientDataError("PDF manual scanning was cancelled by the user.");
+            } else {
+              console.warn("Async PDF scan error:", pdfErr);
+              setInsufficientDataError(
+                `PDF scan notice: ${pdfErr.message}. If this manual contains scanned image-only pages, please use the Camera or Photo upload.`
+              );
+            }
             setIsProcessing(false);
           }
         };
@@ -360,13 +397,8 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
         setIsProcessing(false);
       }
     } else if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const dataUrl = evt.target?.result as string;
-        setCapturedPhotoUrl(dataUrl);
-        runRealOCR(dataUrl);
-      };
-      reader.readAsDataURL(file);
+      // Direct image file with offline compression
+      handleImageFileUpload(e);
     } else {
       const reader = new FileReader();
       reader.onload = (evt) => {
@@ -387,6 +419,39 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
     setInsufficientDataError(null);
     setExtractedData(null);
     parseContentWithTaxonomy(rawText);
+  };
+
+  const applyExtractedTaxonomy = (matchResult: TaxonomyMatchResult) => {
+    setIsProcessing(false);
+    const matched = matchResult.matchedTaxonomy;
+    const primaryName = matched ? matched.systemName : (matchResult.detectedAbbreviations[0]?.fullName || "Marine Machinery");
+    const matchedDept = matchResult.suggestedDepartment;
+    const regCode = matchResult.statutoryCode;
+    const limitVal = matchResult.limitThreshold;
+    const makerVal = matchResult.makerName;
+    const modelVal = matchResult.modelName;
+    const defaultLoc = matchedDept === "Deck" ? "Bridge / Wheelhouse" : matchedDept === "Cargo" ? "Main Deck / CCR" : "Engine Room";
+
+    // Populate review fields
+    setEqName(primaryName);
+    setEqMaker(makerVal);
+    setEqModel(modelVal);
+    setEqLocation(defaultLoc);
+    setEqRegCode(regCode);
+    setDepartment(matchedDept);
+    setEqGoverning(matched ? matched.governingBody : "IMO SOLAS");
+    setEqSummary(matched ? matched.operationalSummary : `Primary Onboard Function: Verified statutory compliance for ${primaryName}.`);
+    setEqLimit(limitVal);
+    setEqInterval(matched ? matched.testInterval : "Monthly");
+    setEqSpares(matchResult.suggestedSpares);
+
+    setExtractedData(matchResult);
+
+    const abbrList = matchResult.detectedAbbreviations.map((a) => a.abbreviation).join(", ");
+    const abbrText = abbrList ? ` • Matched Acronyms: [${abbrList}]` : "";
+    setParseSuccessMessage(
+      `✅ Matched Taxonomy: "${primaryName}" (${matchedDept})${abbrText}. Review extracted parameters below and save to vault.`
+    );
   };
 
   // High-Precision Marine Parser with Static Taxonomy & Vocabulary Filtering
@@ -415,35 +480,7 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
         return;
       }
 
-      const matched = matchResult.matchedTaxonomy;
-      const primaryName = matched ? matched.systemName : (matchResult.detectedAbbreviations[0]?.fullName || "Marine Machinery");
-      const matchedDept = matchResult.suggestedDepartment;
-      const regCode = matchResult.statutoryCode;
-      const limitVal = matchResult.limitThreshold;
-      const makerVal = matchResult.makerName;
-      const modelVal = matchResult.modelName;
-      const defaultLoc = matchedDept === "Deck" ? "Bridge / Wheelhouse" : matchedDept === "Cargo" ? "Main Deck / CCR" : "Engine Room";
-
-      // Populate review state
-      setEqName(primaryName);
-      setEqMaker(makerVal);
-      setEqModel(modelVal);
-      setEqLocation(defaultLoc);
-      setEqRegCode(regCode);
-      setDepartment(matchedDept);
-      setEqGoverning(matched ? matched.governingBody : "IMO SOLAS");
-      setEqSummary(matched ? matched.operationalSummary : `Primary Onboard Function: Verified statutory compliance for ${primaryName}.`);
-      setEqLimit(limitVal);
-      setEqInterval(matched ? matched.testInterval : "Monthly");
-      setEqSpares(matchResult.suggestedSpares);
-
-      setExtractedData(matchResult);
-
-      const abbrList = matchResult.detectedAbbreviations.map((a) => a.abbreviation).join(", ");
-      const abbrText = abbrList ? ` • Matched Acronyms: [${abbrList}]` : "";
-      setParseSuccessMessage(
-        `✅ Matched Taxonomy: "${primaryName}" (${matchedDept})${abbrText}. Review extracted specifications below and save to vault.`
-      );
+      applyExtractedTaxonomy(matchResult);
     }, 450);
   };
 
@@ -485,14 +522,14 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
         makerDesignSpecs: [
           { label: "Operating Normal", nominalValue: "Nominal Operating Band", alarmLimit: eqLimit },
         ],
-        quickNotes: "Extracted and verified via Marine Static Taxonomy OCR Engine.",
+        quickNotes: "Extracted and verified via Marine Async Taxonomy Ingestion Engine.",
         criticalSparesOnboard: eqSpares.split(",").map((s) => s.trim()).filter(Boolean),
         photos: capturedPhotoUrl
           ? [
               {
                 id: `photo-${Date.now()}`,
                 fileName: `scan_${Date.now()}.jpg`,
-                fileSizeKb: 150,
+                fileSizeKb: compressionMetrics?.fileSizeKb || 120,
                 dataUrl: capturedPhotoUrl,
                 caption: `Nameplate / Technical Scan: ${eqName}`,
                 uploadedAt: new Date().toISOString(),
@@ -524,7 +561,7 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
               {
                 id: `photo-trouble-${Date.now()}`,
                 fileName: `trouble_scan_${Date.now()}.jpg`,
-                fileSizeKb: 150,
+                fileSizeKb: compressionMetrics?.fileSizeKb || 120,
                 dataUrl: capturedPhotoUrl,
                 caption: `Fault Investigation Scan: ${eqName}`,
                 uploadedAt: new Date().toISOString(),
@@ -564,9 +601,12 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Marine OCR Scanner & Technical Ingestion</span>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                  <Zap className="w-3 h-3" /> Async PDF Engine & Offline Compressor
+                </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Powered by a Static Maritime Taxonomy & Vocabulary Filter for high-accuracy document and nameplate recognition.
+                Non-blocking async manual scanning with real-time progress and offline high-efficiency image compression.
               </p>
             </div>
           </div>
@@ -737,7 +777,7 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
             <Camera className="w-4 h-4 shrink-0" />
             <div className="truncate">
               <p className="text-xs font-bold">📷 Live Camera</p>
-              <p className="text-[10px] opacity-80 hidden sm:block">Real-time OCR viewfinder</p>
+              <p className="text-[10px] opacity-80 hidden sm:block">OCR viewfinder + Auto-compress</p>
             </div>
           </button>
 
@@ -756,7 +796,7 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
             <FileUp className="w-4 h-4 shrink-0" />
             <div className="truncate">
               <p className="text-xs font-bold">📁 PDF / Excel / Photo</p>
-              <p className="text-[10px] opacity-80 hidden sm:block">Upload file or photo</p>
+              <p className="text-[10px] opacity-80 hidden sm:block">Async manual scanner</p>
             </div>
           </button>
 
@@ -883,9 +923,9 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
               <button
                 type="button"
                 onClick={handleCaptureSnapshot}
-                disabled={!cameraActive || isProcessing}
+                disabled={!cameraActive || isProcessing || isCompressingImage}
                 className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-white dark:bg-slate-800 border-4 border-indigo-600 shadow-xl hover:scale-105 active:scale-95 transition cursor-pointer disabled:opacity-50"
-                title="Snap Photo & Run Marine OCR"
+                title="Snap Photo, Auto-Compress Offline & Run Marine OCR"
               >
                 <div className="w-10 h-10 rounded-full bg-indigo-600 group-hover:bg-indigo-500 flex items-center justify-center text-white transition">
                   <Camera className="w-5 h-5" />
@@ -893,8 +933,8 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
               </button>
 
               <div className="text-right">
-                <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Resolution</p>
-                <p className="text-[10px] text-emerald-500 font-mono font-bold">1080p HD OCR</p>
+                <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Offline Optimizer</p>
+                <p className="text-[10px] text-emerald-500 font-mono font-bold">⚡ WebWorker Compressor</p>
               </div>
             </div>
           </div>
@@ -902,31 +942,67 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
 
         {/* 2. File Upload Mode (.pdf, .xlsx, .csv, image) */}
         {activeMode === "upload" && (
-          <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 rounded-2xl p-8 sm:p-12 text-center space-y-3 transition bg-slate-50 dark:bg-slate-950/40 relative">
-            <input
-              type="file"
-              accept=".pdf, .xlsx, .xls, .csv, .txt, image/*"
-              onChange={handleFileUpload}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-            <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
-              <FileUp className="w-7 h-7" />
+          <div className="space-y-3">
+            {/* Scope selection for PDF scans */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300">
+                <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
+                <span>PDF Manual Scan Scope:</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPdfMaxPages(25)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                    pdfMaxPages === 25
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
+                  Fast Scan (First 25 Pages)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPdfMaxPages(60)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                    pdfMaxPages === 60
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
+                  Deep Scan (Up to 60 Pages)
+                </button>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                Click or drop PDF manual, Excel sheet, or Photo
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Fast multi-format support: PDF Manuals (.pdf), Spreadsheets (.xlsx, .csv), Images (.jpg, .png)
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono">
-                ⚡ Fast PDF Engine (First 15 pages)
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono">
-                🔍 Static Maritime Taxonomy Filter
-              </span>
+
+            <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 rounded-2xl p-8 sm:p-10 text-center space-y-3 transition bg-slate-50 dark:bg-slate-950/40 relative">
+              <input
+                type="file"
+                accept=".pdf, .xlsx, .xls, .csv, .txt, image/*"
+                onChange={handleFileUpload}
+                disabled={isProcessing}
+                className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
+                <FileUp className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  Click or drop PDF manual, Excel sheet, or Photo
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Fast multi-format support: PDF Manuals (.pdf), Spreadsheets (.xlsx, .csv), Images (.jpg, .png)
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" /> Non-blocking Async PDF Engine
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-mono flex items-center gap-1">
+                  <HardDriveDownload className="w-3.5 h-3.5 text-emerald-500" /> Offline Image Compressor
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -956,8 +1032,62 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
           </div>
         )}
 
-        {/* Processing Progress Status */}
-        {isProcessing && (
+        {/* Asynchronous Non-Blocking PDF Real-time Progress Bar & Status */}
+        {isProcessing && pdfProgress && (
+          <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-800 text-white space-y-3 animate-in fade-in">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-indigo-200">
+                    {pdfProgress.statusText}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Page {pdfProgress.currentPage} of {pdfProgress.totalPages} • Extracted {pdfProgress.extractedCharsCount} characters
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-black px-2 py-1 rounded bg-indigo-900 border border-indigo-700 text-indigo-300">
+                  {pdfProgress.percent}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCancelPDFScan}
+                  className="px-2.5 py-1 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <StopCircle className="w-3.5 h-3.5" />
+                  <span>Cancel Scan</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Smooth Progress Bar */}
+            <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-indigo-900">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-all duration-300 rounded-full"
+                style={{ width: `${pdfProgress.percent}%` }}
+              />
+            </div>
+
+            {/* Detected Match Indicator during scanning */}
+            {pdfProgress.matchedEquipmentName && (
+              <div className="p-2 rounded-lg bg-indigo-900/40 border border-indigo-700/60 flex items-center justify-between text-xs text-indigo-200">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Detected Candidate: {pdfProgress.matchedEquipmentName}</span>
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                  {pdfProgress.matchedScore}% Match
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* General Processing Spinner (OCR or Excel) */}
+        {isProcessing && !pdfProgress && (
           <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 text-center space-y-2 animate-in fade-in">
             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
@@ -1059,18 +1189,29 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
               ))}
             </div>
 
-            {/* Captured Photo Preview thumbnail if available */}
+            {/* Offline Image Compression Metrics & Captured Photo Preview */}
             {capturedPhotoUrl && (
-              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
+              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <img
                     src={capturedPhotoUrl}
                     alt="Captured Scan Preview"
-                    className="w-16 h-12 object-cover rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs"
+                    className="w-16 h-12 object-cover rounded-lg border border-slate-300 dark:border-slate-700 shadow-2xs shrink-0"
                   />
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-white">Captured Technical Photo Attached</p>
-                    <p className="text-[10px] text-slate-500">Will be saved directly to the equipment's technical photo gallery.</p>
+                    {compressionMetrics ? (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded">
+                          ⚡ {compressionMetrics.originalSizeKb} KB → {compressionMetrics.fileSizeKb} KB ({compressionMetrics.savingsPercent}% saved)
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {compressionMetrics.width}×{compressionMetrics.height}px
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-slate-500">Will be saved directly to the equipment's technical photo gallery.</p>
+                    )}
                   </div>
                 </div>
 
@@ -1078,9 +1219,10 @@ export const DocumentIngestionScannerModal: React.FC<DocumentIngestionScannerMod
                   type="button"
                   onClick={() => {
                     setCapturedPhotoUrl(null);
+                    setCompressionMetrics(null);
                     setActiveMode("camera");
                   }}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer self-end sm:self-auto"
                 >
                   Retake Photo
                 </button>

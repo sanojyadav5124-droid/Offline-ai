@@ -219,45 +219,16 @@ export function logAuditEntry(entry: Omit<ChangeLogEntry, "id" | "timestamp">): 
   return newEntry;
 }
 
+import { compressImageOffline } from "./imageCompressor";
+
 // Compress image to small dataUrl (max 1024px, 0.72 quality) to keep offline storage light
-export function compressImageFile(file: File, maxDimension = 1024, quality = 0.72): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (readerEvent) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxDimension) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          }
-        } else {
-          if (height > maxDimension) {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return resolve(readerEvent.target?.result as string);
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
-      };
-      img.onerror = () => reject(new Error("Failed to process image"));
-      img.src = readerEvent.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
+export async function compressImageFile(file: File, maxDimension = 1024, quality = 0.72): Promise<string> {
+  const result = await compressImageOffline(file, {
+    maxWidthOrHeight: maxDimension,
+    initialQuality: quality,
+    useWebWorker: true,
   });
+  return result.dataUrl;
 }
 
 // Export Full Maritime Knowledge Vault as a single USB-ready JSON file
